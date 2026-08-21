@@ -7,6 +7,7 @@ import EmptyState from '../components/common/EmptyState'
 import FoodPyramid from '../components/common/FoodPyramid'
 import { INSECT_CATEGORIES, getSpeciesCategory, getCategoryStats, getHabitatById } from '../data/insectSpecies'
 import { getInsectFeatureSummary } from '../data/insectSummaries'
+import { apiUrl } from '../api/apiBase'
 
 const RANK_OPTIONS = [
   { id: 'gold', label: '금', desc: '직접 찍은 사진', field: 'photoUrl', className: 'bg-rank-gold text-white' },
@@ -58,7 +59,7 @@ export default function FriendFieldGuide() {
     let cancelled = false
     // eslint-disable-next-line react-hooks/set-state-in-effect -- 마운트/uid 변경 시 1회 서버에서 불러오는 표준 패턴
     setIsLoading(true)
-    fetch(`/api/field-guide/${encodeURIComponent(uid)}`)
+    fetch(apiUrl(`/api/field-guide/${encodeURIComponent(uid)}`))
       .then((response) => (response.ok ? response.json() : null))
       .then((data) => {
         if (cancelled || !data) return

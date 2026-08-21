@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { User, Lock, Sprout } from 'lucide-react'
 import { useAuth } from '../../router/AuthContext'
+import { apiUrl } from '../../api/apiBase'
 import AuthToast from './AuthToast'
 
 export default function SignupForm() {
@@ -23,7 +24,7 @@ export default function SignupForm() {
     if (!username || !password || !nickname) return
     setToast(null)
     try {
-      const response = await fetch('/api/signup', {
+      const response = await fetch(apiUrl('/api/signup'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password, nickname }),

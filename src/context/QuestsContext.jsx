@@ -182,7 +182,17 @@ export function QuestsProvider({ children }) {
         setRepresentativeCharacter(nextCharacter)
         saveUserState(user.uid, REPRESENTATIVE_CHARACTER_KEY, nextCharacter)
       }
-      setAdultHistory(Array.isArray(state[ADULT_HISTORY_KEY]) ? state[ADULT_HISTORY_KEY] : [])
+      // historyId가 없는 예전 데이터(이 필드가 생기기 전에 저장된 계정)는 불러오는 시점에
+      // 한 번 채워서 저장해둔다 — 안 그러면 그 계정은 이 수정 이후에도 계속 인덱스 밀림
+      // 버그를 겪는다.
+      const storedAdultHistory = Array.isArray(state[ADULT_HISTORY_KEY]) ? state[ADULT_HISTORY_KEY] : []
+      const backfilledAdultHistory = storedAdultHistory.map((entry) =>
+        entry.historyId ? entry : { ...entry, historyId: crypto.randomUUID() }
+      )
+      setAdultHistory(backfilledAdultHistory)
+      if (backfilledAdultHistory.some((entry, i) => entry !== storedAdultHistory[i]) && user.uid) {
+        saveUserState(user.uid, ADULT_HISTORY_KEY, backfilledAdultHistory)
+      }
       setProfileCharacterId(typeof state[PROFILE_CHARACTER_KEY] === 'string' ? state[PROFILE_CHARACTER_KEY] : null)
       setIsLoaded(true)
     })
@@ -215,8 +225,11 @@ export function QuestsProvider({ children }) {
     if (!isLoaded) return
     const onAdultReached = () => {
       // 방금 성체가 된 캐릭터는 사라지는 게 아니라 adultHistory에 남아서 가방에 계속 보인다 —
-      // 새로 뽑은 알과 별개다.
-      const grownAdult = { ...representativeCharacter, stage: 'adult' }
+      // 새로 뽑은 알과 별개다. historyId는 이 항목을 영구히 가리키는 고유값이다 — 배열 인덱스로
+      // 식별하면, 이 항목이 앞으로 나중에 추가될 성체들 때문에 계속 밀려나면서 이미 저장해둔
+      // profileCharacterId 선택이 엉뚱한 캐릭터를 가리키게 된다(대표 캐릭터가 무작위로 바뀌는
+      // 것처럼 보이는 버그의 원인이었다).
+      const grownAdult = { ...representativeCharacter, stage: 'adult', historyId: crypto.randomUUID() }
       const nextHistory = [grownAdult, ...adultHistory].slice(0, 20)
       setAdultHistory(nextHistory)
       if (user?.uid) saveUserState(user.uid, ADULT_HISTORY_KEY, nextHistory)

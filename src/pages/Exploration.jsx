@@ -17,6 +17,7 @@ import { getInsectDrawingGuide } from '../data/insectDrawingGuides'
 import { playSfx } from '../utils/sound'
 import { SFX } from '../utils/sfx'
 import { reportMissionEvent } from '../utils/missionEvents'
+import { apiUrl } from '../api/apiBase'
 
 function readFileAsDataUrl(file) {
   return new Promise((resolve, reject) => {
@@ -203,7 +204,7 @@ export default function Exploration() {
           formData.append('hint_text', hintText)
         }
 
-        const endpoint = method === 'drawing-freehand' ? '/api/predict-drawing' : '/api/classify-insect'
+        const endpoint = apiUrl(method === 'drawing-freehand' ? '/api/predict-drawing' : '/api/classify-insect')
         const response = await requestPrediction(endpoint, formData)
         if (!response.ok) {
           const body = await response.json().catch(() => null)

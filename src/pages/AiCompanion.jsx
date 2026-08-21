@@ -6,6 +6,7 @@ import { getFeaturedCharacterIdentity } from '../data/representativeCharacter'
 import { useAuth } from '../router/AuthContext'
 import { useQuests } from '../context/QuestsContext'
 import { reportMissionEvent } from '../utils/missionEvents'
+import { apiUrl } from '../api/apiBase'
 
 // ai-companion.md: 대표 알 AI / 곤충 페르소나 AI 역할 분리, 음성 입력 실패 시 텍스트 입력 가능,
 // 시스템 프롬프트·API 키 비노출(실제 호출은 server/index.js의 /chat 프록시가 담당). 안전 규칙:
@@ -144,7 +145,7 @@ function localReply(question, insect, insectFlavor, previousMessages = [], compa
 }
 
 async function askServer(message, history, context, sessionId) {
-  const response = await fetch('/chat', {
+  const response = await fetch(apiUrl('/chat'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -219,6 +220,17 @@ export default function AiCompanion() {
       // 저장소를 못 쓰는 브라우저에서도 대화 자체는 계속 동작한다.
     }
   }, [chatStorageKey, messages, sessionId])
+
+  // 페이지를 벗어나면(뒤로가기 등) 대화를 정리한다 — 새로고침처럼 페이지가 그대로 유지되는
+  // 경우에는 이 정리(cleanup)가 실행되지 않으므로 새로고침 후에는 계속 이어지고, 다른
+  // 화면으로 나갔다가 같은 곤충으로 다시 들어오면 새 대화로 시작한다.
+  useEffect(() => () => {
+    try {
+      window.sessionStorage.removeItem(chatStorageKey)
+    } catch {
+      // 저장소를 못 쓰는 브라우저에서는 애초에 남길 것도 없다.
+    }
+  }, [chatStorageKey])
 
   useEffect(() => () => {
     recognitionRef.current?.stop()

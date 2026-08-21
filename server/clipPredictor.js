@@ -112,35 +112,72 @@ function softmax(values) {
   return exp.map((value) => value / total)
 }
 
+// 여러 청크의 normalize() 결과({data, rows, width})를 하나로 이어 붙인다 — 한 번에 큰 배치로
+// 넣지 않고 작은 묶음으로 나눠 처리한 뒤 합칠 때 공통으로 쓴다.
+function concatNormalizedChunks(chunks) {
+  if (!chunks.length) return null
+  return {
+    data: Float32Array.from(chunks.flatMap((chunk) => Array.from(chunk.data))),
+    rows: chunks.reduce((sum, chunk) => sum + chunk.rows, 0),
+    width: chunks[0].width,
+  }
+}
+
+// 텍스트도 79개를 한 번에(그것도 candidatePrompts/descriptions 두 묶음을 Promise.all로 동시에)
+// 배치 처리하면 트랜스포머 activation 메모리가 그만큼 쌓인다 — 이미지와 같은 이유로 작은
+// 묶음으로 나눠 순차 처리한다(동시에 X, 하나씩).
+const TEXT_BATCH_SIZE = 8
+async function embedTextsInBatches(textModel, tokenizer, texts) {
+  const chunks = []
+  for (let start = 0; start < texts.length; start += TEXT_BATCH_SIZE) {
+    const batch = texts.slice(start, start + TEXT_BATCH_SIZE)
+    const output = await textModel(tokenizer(batch, { padding: true, truncation: true }))
+    chunks.push(normalize(output.text_embeds))
+  }
+  return concatNormalizedChunks(chunks)
+}
+
 let predictorPromise
 
 export function getClipPredictor() {
   if (!predictorPromise) {
     predictorPromise = (async () => {
+      // CLIP ViT-B/32는 fp32 그대로 불러오면 가중치만 ~600MB라 Render 무료 플랜의 512MB RAM
+      // 한도를 그 자체로 넘겨서 OOM으로 계속 죽었다(Events 로그: "Ran out of memory (used
+      // over 512MB)") — q8(int8 양자화) 버전을 불러와 가중치 용량을 4분의 1 수준으로 줄인다.
       const [processor, tokenizer, textModel, visionModel] = await Promise.all([
         AutoProcessor.from_pretrained(MODEL_ID),
         AutoTokenizer.from_pretrained(MODEL_ID),
-        CLIPTextModelWithProjection.from_pretrained(MODEL_ID),
-        CLIPVisionModelWithProjection.from_pretrained(MODEL_ID),
+        CLIPTextModelWithProjection.from_pretrained(MODEL_ID, { dtype: 'q8' }),
+        CLIPVisionModelWithProjection.from_pretrained(MODEL_ID, { dtype: 'q8' }),
       ])
       const candidatePrompts = SPECIES.map((item) => `a child's drawing of a ${item.en_name}, a doodle or sketch`)
       const descriptions = SPECIES.map((item) => item.description)
-      const [candidateOutput, descriptionOutput] = await Promise.all([
-        textModel(tokenizer(candidatePrompts, { padding: true, truncation: true })),
-        textModel(tokenizer(descriptions, { padding: true, truncation: true })),
-      ])
-      const referenceImages = []
-      for (const species of SPECIES) {
-        const id = String(species.id).padStart(2, '0')
-        const imagePath = path.join(ROOT_DIR, 'public', 'insects-original', `${id}.png`)
-        try { referenceImages.push(await RawImage.read(imagePath)) } catch { referenceImages.push(null) }
+      // 79개를 한 번에(그것도 두 묶음을 Promise.all로 동시에) 배치 처리하면 트랜스포머 activation
+      // 메모리가 그만큼 쌓여서, 가중치를 q8로 줄여도 시작 시점 메모리가 크게 튄다(Events 로그:
+      // OOM + status 137 강제종료). 텍스트·이미지 모두 작은 묶음으로 순차 처리해 최대 메모리
+      // 사용량을 배치 크기만큼으로 제한한다 — 동시에 두 개를 처리하지도 않는다.
+      const candidateFeatures = await embedTextsInBatches(textModel, tokenizer, candidatePrompts)
+      const descriptionFeatures = await embedTextsInBatches(textModel, tokenizer, descriptions)
+
+      const REFERENCE_BATCH_SIZE = 8
+      const referenceEmbeddingChunks = []
+      for (let start = 0; start < SPECIES.length; start += REFERENCE_BATCH_SIZE) {
+        const batchSpecies = SPECIES.slice(start, start + REFERENCE_BATCH_SIZE)
+        const batchImages = []
+        for (const species of batchSpecies) {
+          const id = String(species.id).padStart(2, '0')
+          const imagePath = path.join(ROOT_DIR, 'public', 'insects-original', `${id}.png`)
+          try { batchImages.push(await RawImage.read(imagePath)) } catch { /* 이미지 없는 종은 건너뜀 */ }
+        }
+        if (!batchImages.length) continue
+        const batchOutput = await visionModel(await processor(batchImages))
+        referenceEmbeddingChunks.push(normalize(batchOutput.image_embeds))
       }
-      const validReferences = referenceImages.filter(Boolean)
-      const referenceOutput = validReferences.length ? await visionModel(await processor(validReferences)) : null
-      const referenceFeatures = referenceOutput ? normalize(referenceOutput.image_embeds) : null
+      const referenceFeatures = concatNormalizedChunks(referenceEmbeddingChunks)
       let trainedSketchModel = null
       try { trainedSketchModel = JSON.parse(await fs.readFile(TRAINED_MODEL_PATH, 'utf8')) } catch { /* training data is optional */ }
-      return { processor, tokenizer, textModel, visionModel, candidateFeatures: normalize(candidateOutput.text_embeds), descriptionFeatures: normalize(descriptionOutput.text_embeds), referenceFeatures, trainedSketchModel }
+      return { processor, tokenizer, textModel, visionModel, candidateFeatures, descriptionFeatures, referenceFeatures, trainedSketchModel }
     })()
   }
   return predictorPromise

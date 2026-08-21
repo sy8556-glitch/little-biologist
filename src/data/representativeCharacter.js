@@ -135,6 +135,7 @@ export function getOwnedRepresentativeCharacters(character, adultHistory = []) {
       name: `대표 캐릭터 ${getRepresentativeCharacterStageLabel(character?.stage)}`,
       category: 'egg',
       image: currentImage,
+      sourceCharacter: character,
     })
   }
   adultHistory.forEach((pastCharacter, index) => {
@@ -142,10 +143,15 @@ export function getOwnedRepresentativeCharacters(character, adultHistory = []) {
     if (!image) return
     const speciesName = getRepresentativeSpeciesName(pastCharacter)
     items.push({
-      id: `representative-character-adult-${index}`,
+      // historyId(고유값)가 있으면 그걸 쓴다 — 배열 인덱스를 그대로 id로 쓰면, 새 성체가
+      // adultHistory 앞쪽에 추가될 때마다 기존 항목들의 인덱스가 하나씩 밀려서, 이미
+      // profileCharacterId로 저장해둔 "선택"이 완전히 다른(엉뚱한) 캐릭터를 가리키게 되는
+      // 버그가 있었다 — 인덱스는 legacy 데이터(historyId 없음) 대비용 폴백일 뿐이다.
+      id: pastCharacter.historyId ? `representative-character-adult-${pastCharacter.historyId}` : `representative-character-adult-${index}`,
       name: speciesName ? `${speciesName} (성체)` : '성체가 된 대표 캐릭터',
       category: 'egg',
       image,
+      sourceCharacter: pastCharacter,
     })
   })
   return items
@@ -167,7 +173,6 @@ export function getFeaturedCharacterIdentity(character, adultHistory = [], profi
     return { name: getRepresentativeCharacterStageLabel(stage), speciesName: null }
   }
 
-  const historyIndex = Number(selected.id.replace('representative-character-adult-', ''))
-  const speciesName = getRepresentativeSpeciesName(adultHistory[historyIndex])
+  const speciesName = getRepresentativeSpeciesName(selected.sourceCharacter)
   return { name: speciesName || '대표 캐릭터', speciesName }
 }

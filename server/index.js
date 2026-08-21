@@ -10,6 +10,15 @@ import { getClipPredictor, predictDrawing, SPECIES as CLIP_SPECIES } from './cli
 import { pool, dbReady, generateUid, hashPassword, verifyPassword } from './db.js'
 import { createRepresentativeCharacter } from '../src/data/representativeCharacter.js'
 
+// 라우트 핸들러 안의 await(대부분 DB 쿼리)가 실패하면 아무도 안 잡은 rejection이 되는데,
+// Node는 기본적으로 이걸 uncaught exception과 똑같이 취급해서 프로세스 전체를 죽인다 — 사용자
+// 한 명의 요청 하나가 실패했을 뿐인데 모든 사용자가 접속 불가가 되고, Render가 재시작해도
+// 죽은 프로세스의 DB 커넥션이 바로 안 풀려서 재시작 직후 또 죽는 루프에 빠지는 원인이었다.
+// pool.on('error')와 같은 이유로, 여기서도 리스너를 등록해 서버가 계속 떠 있게 한다.
+process.on('unhandledRejection', (err) => {
+  console.error('[server] unhandled rejection (server가 계속 떠 있도록 무시함):', err)
+})
+
 // predict_insect.py를 서버 사이드로 옮긴 것. iNaturalist 개인 토큰을 프론트엔드 번들에
 // 노출하지 않기 위해, 사진 업로드는 항상 이 프록시를 거쳐 iNaturalist API를 호출한다.
 const TARGET_SPECIES = INSECT_SPECIES.map((s) => ({ name: s.name, scientificName: s.scientificName || null, feature: s.feature || '' }))
@@ -236,6 +245,7 @@ function buildSystemPrompt(context) {
 - 사용자가 인사만 하면 "안녕, 나는 ${companionName}이야. 지금은 [곤충 이름]에 대해 알아보고 있어."처럼 짧게 네 이름과 학습 주제를 소개하며 인사를 받아 줘. 특징 목록이나 안전 규칙을 인사에 덧붙이지 마.
 - 사용자가 "누구야?"라고 물으면 "나는 ${companionName}이야"라고 답하고, 지금 공부 중인 곤충 이름도 함께 알려 줘.
 - 대화가 이어지면 앞선 질문·답변을 기억하고 자연스럽게 이어서 반응해, 이미 답한 내용을 다시 묻지 마.
+- 질문이 짧거나 무엇을 가리키는지 불분명하면(예: "어떤 종류가 있어?", "왜 그래?") 학습 주제 곤충 자체 설명으로 돌아가지 말고, 바로 직전 네 답변이나 사용자의 이전 질문 주제를 이어받아 그 후속 질문으로 해석해.
 - 현재 맥락: ${contextText}
 - 곤충·자연에 관한 질문을 우선 도와줘. 모르는 사실, 종을 확정할 수 없는 내용은 추측하지 말고
   '확실히 알기 어렵다'고 말한 뒤 사진, 크기, 색, 발견 장소처럼 확인에 필요한 정보를 물어봐.
@@ -273,13 +283,13 @@ app.post('/chat', async (req, res) => {
     const companionName = context.companionName || '알'
     messages.push({
       role: 'system',
-      content: `대화 직전 확인: 지금 학습 주제 곤충은 ${observed.name}이야. 너는 ${companionName}이야, 이 곤충을 3인칭으로 설명해. 곤충을 연기하지 말고, 어떤 곤충을 보고 있는지 되묻지 마. 도감 설명은 "${observed.feature || '없음'}", 서식지는 "${observed.habitat || '알 수 없음'}"이야.`,
+      content: `대화 직전 확인: 지금 학습 주제 곤충은 ${observed.name}이야. 너는 ${companionName}이야, 이 곤충을 3인칭으로 설명해. 곤충을 연기하지 말고, 어떤 곤충을 보고 있는지 되묻지 마. 도감 설명은 "${observed.feature || '없음'}", 서식지는 "${observed.habitat || '알 수 없음'}"이야. 단, 사용자의 질문이 직전 대화(예: 천적, 먹이 등 이미 나온 화제)를 이어받는 후속 질문으로 보이면 그 흐름을 우선하고, 이 정보를 이유로 학습 주제 곤충 자체 설명으로 억지로 되돌아가지 마.`,
     })
   }
 
   const imageDataUrl = context.observedInsect?.imageDataUrl
   const groundedMessage = context.observedInsect?.name
-    ? `[도감 참고 정보 — 이 내용을 바탕으로 답해] 곤충: ${context.observedInsect.name}; 서식지: ${context.observedInsect.habitat || '알 수 없음'}; 특징: ${context.observedInsect.feature || '알 수 없음'}\n[사용자 질문] ${message}`
+    ? `[도감 참고 정보 — 질문이 학습 주제 곤충 자체에 대한 것일 때만 이 내용을 바탕으로 답해. 직전 대화를 이어받는 후속 질문이면 이 정보보다 대화 맥락을 우선해] 곤충: ${context.observedInsect.name}; 서식지: ${context.observedInsect.habitat || '알 수 없음'}; 특징: ${context.observedInsect.feature || '알 수 없음'}\n[사용자 질문] ${message}`
     : message
   if (typeof imageDataUrl === 'string' && imageDataUrl.startsWith('data:image/')) {
     messages.push({
@@ -804,89 +814,6 @@ app.put('/api/state/:uid/:key', async (req, res) => {
       break
   }
 
-  res.json({ success: true })
-})
-
-app.post('/api/signup', async (req, res) => {
-  const { username, password, nickname } = req.body || {}
-  if (!username || !password || !nickname) {
-    return res.status(400).json({ error: 'MISSING_FIELDS' })
-  }
-  const { rows: existing } = await pool.query('SELECT 1 FROM users WHERE username = $1', [username])
-  if (existing.length) {
-    return res.status(409).json({ error: 'USERNAME_TAKEN' })
-  }
-  const uid = await issueUid()
-  const passwordHash = hashPassword(password)
-  const today = todayDateKey()
-  const { rows: inserted } = await pool.query(
-    'INSERT INTO users (uid, username, password_hash, nickname, total_login_days, last_login_date) VALUES ($1, $2, $3, $4, 1, $5) RETURNING id',
-    [uid, username, passwordHash, nickname, today]
-  )
-  const userId = inserted[0].id
-  // 대표 캐릭터(알)는 계정마다 6종 중 하나로 무작위 배정하고 첫 단계는 항상 "알"이다.
-  await upsertRepresentativeCharacter(userId, createRepresentativeCharacter())
-  const { rows: userRows } = await pool.query(
-    'SELECT id, uid, username, nickname, total_login_days AS "totalLoginDays" FROM users WHERE id = $1',
-    [userId]
-  )
-  res.status(201).json({ user: userRows[0] })
-})
-
-app.post('/api/login', async (req, res) => {
-  const { username, password } = req.body || {}
-  if (!username || !password) {
-    return res.status(400).json({ error: 'MISSING_FIELDS' })
-  }
-  const { rows } = await pool.query(
-    'SELECT id, uid, username, nickname, password_hash, total_login_days, last_login_date FROM users WHERE username = $1',
-    [username]
-  )
-  const row = rows[0]
-  if (!row || !verifyPassword(password, row.password_hash)) {
-    return res.status(401).json({ error: 'INVALID_CREDENTIALS' })
-  }
-  const today = todayDateKey()
-  let totalLoginDays = row.total_login_days
-  if (row.last_login_date !== today) {
-    totalLoginDays += 1
-    await pool.query('UPDATE users SET total_login_days = $1, last_login_date = $2 WHERE id = $3', [totalLoginDays, today, row.id])
-  }
-  // 이 기능이 생기기 전에 가입한 계정은 대표 캐릭터가 없으니 로그인 시점에 하나 배정해 채운다.
-  const { rows: repCharRows } = await pool.query(
-    "SELECT 1 FROM user_state WHERE user_id = $1 AND key = 'representativeCharacter'",
-    [row.id]
-  )
-  if (!repCharRows.length) {
-    await upsertRepresentativeCharacter(row.id, createRepresentativeCharacter())
-  }
-  res.json({ user: { id: row.id, uid: row.uid, username: row.username, nickname: row.nickname, totalLoginDays } })
-})
-
-app.get('/api/state/:uid', async (req, res) => {
-  const user = await getUserByUid(req.params.uid)
-  if (!user) return res.status(404).json({ error: 'USER_NOT_FOUND' })
-  const { rows } = await pool.query('SELECT key, value FROM user_state WHERE user_id = $1', [user.id])
-  const state = {}
-  for (const row of rows) {
-    try {
-      state[row.key] = JSON.parse(row.value)
-    } catch {
-      state[row.key] = null
-    }
-  }
-  res.json({ state })
-})
-
-app.put('/api/state/:uid/:key', async (req, res) => {
-  const user = await getUserByUid(req.params.uid)
-  if (!user) return res.status(404).json({ error: 'USER_NOT_FOUND' })
-  const value = JSON.stringify(req.body?.value ?? null)
-  await pool.query(
-    `INSERT INTO user_state (user_id, key, value, updated_at) VALUES ($1, $2, $3, now())
-     ON CONFLICT (user_id, key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`,
-    [user.id, req.params.key, value]
-  )
   res.json({ success: true })
 })
 

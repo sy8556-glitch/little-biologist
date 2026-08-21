@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { User, Lock } from 'lucide-react'
 import { useAuth } from '../../router/AuthContext'
+import { apiUrl } from '../../api/apiBase'
 import AuthToast from './AuthToast'
 
 export default function LoginForm() {
@@ -28,7 +29,7 @@ export default function LoginForm() {
     setStatus('loading')
     setToast(null)
     try {
-      const response = await fetch('/api/login', {
+      const response = await fetch(apiUrl('/api/login'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username: id, password }),
