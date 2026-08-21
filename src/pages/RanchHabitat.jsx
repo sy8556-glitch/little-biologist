@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useNavigate, useParams } from 'react-router-dom'
 
 import forestImage from '../../IMAGE/forest.png'
@@ -147,7 +148,13 @@ function InsectSpot({ species, placement, selected, isEditing, onClick, onPointe
   const { x, y, size, rotate } = placement
 
   return (
-    <div className="absolute" style={{ left: `${x}%`, top: `${y}%`, transform: 'translate(-50%, -50%)' }}>
+    // 이 div의 transform이 새 stacking context를 만들어서, 두 단계 아래 버튼에만 z-[110]을 줘도
+    // 이 wrapper 자체는 여전히 z-index:auto로 취급돼 튜토리얼 오버레이(z-[100])에 가려진다 —
+    // wrapper에도 같이 z-index를 줘야 실제로 위로 올라온다.
+    <div
+      className="absolute"
+      style={{ left: `${x}%`, top: `${y}%`, transform: 'translate(-50%, -50%)', ...(showTutorialPointer ? { zIndex: 110 } : {}) }}
+    >
       <div style={{ transform: `rotate(${rotate}deg)` }}>
         <button
           type="button"
@@ -217,18 +224,28 @@ export default function RanchHabitat() {
   // 서식지에 있는 동안 그 서식지 전용 효과음을 튼다 — 풀밭은 꽃밭/나무 단계에 따라 다른
   // 트랙으로 끊김 없이 전환된다(useSceneBackgroundMusic이 src 변경을 감지해서 처리). 상점과 달리
   // 이 효과음은 공용 목장 배경음악을 대체하지 않고 그 위에 같이 겹쳐서 들려준다
-  // (suppressGlobalMusic: false).
+  // (suppressGlobalMusic: false). 다만 공용 배경음악이 그대로 크면 서식지 효과음이 묻히므로,
+  // 여기 있는 동안만 공용 배경음악을 줄이고(duckGlobalMusic) 효과음 자체 볼륨은 키운다.
   const habitatMusicSrc = scene.id === 'grass' ? getGrassStageSoundSrc(stage) : getRanchHabitatSoundSrc(scene.id)
-  useSceneBackgroundMusic(habitatMusicSrc, { suppressGlobalMusic: false })
+  useSceneBackgroundMusic(habitatMusicSrc, { suppressGlobalMusic: false, duckGlobalMusic: 0.35, volume: 0.55 })
   const [selectedSpeciesId, setSelectedSpeciesId] = useState(null)
   const [isEditing, setIsEditing] = useState(false)
   const [isPanelOpen, setIsPanelOpen] = useState(true)
+
+  // 정보 패널이 기본으로 열려 있어서(화면 하단을 크게 덮음) 튜토리얼이 눌러야 할 곤충을 그대로
+  // 가려버리는 경우가 있었다 — '곤충을 관찰해요' 단계에 들어서면 자동으로 접어준다.
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- 튜토리얼 단계가 바뀌는 순간에만 패널을 접는다.
+    if (step?.id === 'insect') setIsPanelOpen(false)
+  }, [step?.id])
   const [isZoneBannerOpen, setIsZoneBannerOpen] = useState(false)
   const [bannerZoneName, setBannerZoneName] = useState(zoneName)
   const [positionOverrides, setPositionOverrides] = useState(loadInsectPositionOverrides)
   const [entered, setEntered] = useState(false)
   const layerRef = useRef(null)
   const draggingRef = useRef(null)
+  const stageToggleButtonRef = useRef(null)
+  const [stageToggleRect, setStageToggleRect] = useState(null)
 
   useEffect(() => {
     setStage(0)
@@ -269,6 +286,28 @@ export default function RanchHabitat() {
   const placementKey = getPlacementKey(scene.id, stage)
   const placements = HABITAT_PLACEMENTS[placementKey] ?? []
   const selectedSpecies = registeredSpecies.find((species) => species.id === selectedSpeciesId) ?? null
+
+  // 풀밭은 꽃밭(stage 0)/나무(stage 1)에 따라 보이는 곤충이 갈리는데, 튜토리얼이 눌러야 할
+  // 곤충이 지금 안 보이는 쪽(예: stage 0인데 나무 곤충)에 있으면 화면에 표시조차 안 돼서
+  // 아무것도 못 누른다 — 이때는 대신 반대쪽 배경으로 넘어가는 버튼을 눌러보도록 유도한다.
+  const targetSpeciesRequiresOtherStage =
+    step?.id === 'insect' &&
+    scene.id === 'grass' &&
+    targetSpeciesId != null &&
+    !registeredSpecies.some((species) => species.id === targetSpeciesId)
+
+  // 이 버튼을 감싼 상단 바(z-10, position:relative)가 그 자체로 stacking context라, 안에서
+  // z-index를 아무리 올려도 튜토리얼 전역 락(z-100, 'insect' 단계에서 켜져 있음)을 못 이긴다 —
+  // RanchBackButton과 같은 이유라 같은 방식(body에 직접 붙는 portal)으로 빠져나온다.
+  useEffect(() => {
+    if (!targetSpeciesRequiresOtherStage) return
+    const updateRect = () => {
+      if (stageToggleButtonRef.current) setStageToggleRect(stageToggleButtonRef.current.getBoundingClientRect())
+    }
+    updateRect()
+    window.addEventListener('resize', updateRect)
+    return () => window.removeEventListener('resize', updateRect)
+  }, [targetSpeciesRequiresOtherStage, stage])
 
   useEffect(() => {
     reportMissionEvent({ type: 'habitat_population', value: registeredSpecies.length })
@@ -337,13 +376,17 @@ export default function RanchHabitat() {
       />
 
       <div
+        // scale-100은 값이 identity여도 transform 속성 자체가 남아있어서 새 stacking context를
+        // 만든다 — 입장 애니메이션이 끝난 뒤에도 이 상태가 계속 유지되면, 이 안의 튜토리얼
+        // 타깃(관찰할 곤충)이 아무리 z-index를 올려도 튜토리얼 오버레이보다 위로 못 올라가
+        // 클릭이 막힌다. 다 들어온 뒤에는 scale 유틸리티 자체를 빼서 transform을 없앤다.
         className={`absolute inset-0 origin-center transition-all duration-500 ease-out ${
-          entered ? 'scale-100 opacity-100' : 'scale-90 opacity-0'
+          entered ? 'opacity-100' : 'scale-90 opacity-0'
         }`}
       >
       {/* 배경+곤충 배치는 하나의 "세계"로 묶어서 RanchCamera로 드래그(팬)/줌 할 수 있게 한다.
           상단 버튼줄과 정보 패널은 화면에 고정되어야 해서 RanchCamera 밖(형제)에 둔다. */}
-      <RanchCamera>
+      <RanchCamera resetSignal={step?.id === 'insect'}>
         <div className={`absolute inset-0 bg-gradient-to-b ${scene.accent}`} />
         <img
           key={currentImage}
@@ -446,6 +489,7 @@ export default function RanchHabitat() {
             {isSequence && stage === 0 ? (
               <button
                 type="button"
+                ref={stageToggleButtonRef}
                 onClick={(event) => {
                   event.stopPropagation()
                   moveStage(1)
@@ -458,6 +502,7 @@ export default function RanchHabitat() {
             {isSequence && stage === 1 ? (
               <button
                 type="button"
+                ref={stageToggleButtonRef}
                 onClick={(event) => {
                   event.stopPropagation()
                   moveStage(0)
@@ -467,6 +512,31 @@ export default function RanchHabitat() {
                 꽃밭으로 돌아가기
               </button>
             ) : null}
+            {targetSpeciesRequiresOtherStage &&
+              stageToggleRect &&
+              createPortal(
+                <button
+                  type="button"
+                  onClick={() => moveStage(stage === 0 ? 1 : 0)}
+                  className={`${topButtonClass} pointer-events-auto`}
+                  style={{
+                    position: 'fixed',
+                    left: stageToggleRect.left,
+                    top: stageToggleRect.top,
+                    width: stageToggleRect.width,
+                    height: stageToggleRect.height,
+                    zIndex: 110,
+                  }}
+                >
+                  {stage === 0 ? '나무 관찰하기' : '꽃밭으로 돌아가기'}
+                  <span className="tutorial-target-guide pointer-events-none absolute left-1/2 top-1/2 z-30 -translate-x-1/2 -translate-y-1/2">
+                    <span className="tutorial-target-ring tutorial-target-ring--small" aria-hidden="true" />
+                    <span className="tutorial-target-arrow" aria-hidden="true">👇</span>
+                    <span className="tutorial-target-label">여기를 눌러 다른 배경도 살펴보세요</span>
+                  </span>
+                </button>,
+                document.body,
+              )}
             <div className="rounded-full border border-white/15 bg-black/25 px-3 py-2 text-xs font-semibold tracking-wide text-white/90 backdrop-blur-sm">
               {zoneName} · {progressLabel}
             </div>

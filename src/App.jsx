@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { AuthProvider } from './router/AuthContext'
 import { CurrencyProvider } from './context/CurrencyContext'
@@ -10,24 +11,28 @@ import GrowthStageModal from './components/common/GrowthStageModal'
 import BackgroundMusicController from './components/common/BackgroundMusicController'
 import ButtonSoundController from './components/common/ButtonSoundController'
 import SoundAssetPreloader from './components/common/SoundAssetPreloader'
+import LoadingOverlay from './components/common/LoadingOverlay'
 
 import AuthRouteLayout from './pages/auth/AuthRouteLayout'
-import Login from './pages/auth/Login'
-import Signup from './pages/auth/Signup'
-import Ranch from './pages/Ranch'
-import RanchHabitat from './pages/RanchHabitat'
-import Exploration from './pages/Exploration'
-import FieldGuide from './pages/FieldGuide'
-import Quests from './pages/Quests'
-import Friends from './pages/Friends'
-import FriendRanch from './pages/FriendRanch'
-import FriendRanchHabitat from './pages/FriendRanchHabitat'
-import FriendFieldGuide from './pages/FriendFieldGuide'
-import Shop from './pages/Shop'
-import Bag from './pages/Bag'
-import AiCompanion from './pages/AiCompanion'
-import Quiz from './pages/Quiz'
-import Profile from './pages/Profile'
+
+// 라우트 단위 코드 스플리팅: 접속한 화면의 JS만 받아오도록 페이지를 전부 지연 로드한다.
+// (예: /login만 열어도 목장·상점·퀴즈 등 다른 페이지 JS까지 같이 받아오는 걸 막는다.)
+const Login = lazy(() => import('./pages/auth/Login'))
+const Signup = lazy(() => import('./pages/auth/Signup'))
+const Ranch = lazy(() => import('./pages/Ranch'))
+const RanchHabitat = lazy(() => import('./pages/RanchHabitat'))
+const Exploration = lazy(() => import('./pages/Exploration'))
+const FieldGuide = lazy(() => import('./pages/FieldGuide'))
+const Quests = lazy(() => import('./pages/Quests'))
+const Friends = lazy(() => import('./pages/Friends'))
+const FriendRanch = lazy(() => import('./pages/FriendRanch'))
+const FriendRanchHabitat = lazy(() => import('./pages/FriendRanchHabitat'))
+const FriendFieldGuide = lazy(() => import('./pages/FriendFieldGuide'))
+const Shop = lazy(() => import('./pages/Shop'))
+const Bag = lazy(() => import('./pages/Bag'))
+const AiCompanion = lazy(() => import('./pages/AiCompanion'))
+const Quiz = lazy(() => import('./pages/Quiz'))
+const Profile = lazy(() => import('./pages/Profile'))
 
 export default function App() {
   return (
@@ -41,6 +46,7 @@ export default function App() {
       <ButtonSoundController />
       <SoundAssetPreloader />
       <GrowthStageModal />
+      <Suspense fallback={<LoadingOverlay />}>
       <Routes>
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route element={<AuthRouteLayout />}>
@@ -66,6 +72,7 @@ export default function App() {
 
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
+      </Suspense>
       </TutorialProvider>
       </RegisteredPhotosProvider>
       </BagProvider>

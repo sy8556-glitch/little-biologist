@@ -156,12 +156,16 @@ app.post('/api/classify-insect', upload.single('image'), async (req, res) => {
       const commonName = taxon.preferred_common_name || ''
       const apiSciName = taxon.name || ''
       // combined_score는 iNaturalist API가 이미 0~100 스케일로 반환한다 (0~1 스케일이 아님).
-      const score = result.combined_score || 0
+      const score = Math.max(0, Math.min(100, result.combined_score || 0))
       const target = TARGET_SPECIES.find(
         (t) => sciMatches(apiSciName, t.scientificName) || (commonName && commonName.includes(t.name))
       )
       if (target && !matched.some((m) => m.name === target.name)) {
-        matched.push({ name: target.name, commonName, scientificName: apiSciName, confidence: Math.round(score), feature: target.feature })
+        // Math.round는 0.x%대의 낮지만 실재하는 일치율을 0%로 뭉개버려서, 실제로 찾아낸 후보인데도
+        // "일치율 0%"로 보여 마치 못 찾은 것처럼 보이는 버그가 있었다. 소수점 둘째 자리까지 보존하고,
+        // 점수가 0보다 크면 최소 0.01%는 보이게 한다(진짜 0점인 경우만 0%로 남는다).
+        const confidence = score > 0 ? Math.max(0.01, Number(score.toFixed(2))) : 0
+        matched.push({ name: target.name, commonName, scientificName: apiSciName, confidence, feature: target.feature })
       }
     }
 
@@ -451,7 +455,7 @@ async function buildStateForUser(user) {
       [userId]
     ).then((r) => r.rows),
     pool.query(
-      "SELECT key, value FROM user_state WHERE user_id = $1 AND key IN ('bagItems', 'placements', 'profileCharacterId', 'primaryTitleId', 'representativeAdultHistory')",
+      "SELECT key, value FROM user_state WHERE user_id = $1 AND key IN ('bagItems', 'placements', 'profileCharacterId', 'primaryTitleId', 'primaryBadgeId', 'representativeAdultHistory')",
       [userId]
     ).then((r) => r.rows),
   ])
@@ -600,12 +604,10 @@ async function claimLifetimeMissions(userId, type, codes) {
   }
 }
 
+// 클라이언트(resolveAchievementProgress/resolveTitleMissionIds)가 이미 "한 번 뽑은 목록은 다시
+// 섞지 않는다"를 책임지고 있으므로, 여기서는 그 목록에 있는 코드를 빠짐없이 upsert만 하면 된다
+// (ON CONFLICT DO NOTHING이라 이미 있는 코드는 그대로 두고, 새로 늘어난 코드만 추가된다).
 async function insertMissionPoolOnce(userId, type, codes) {
-  const { rows } = await pool.query(
-    `SELECT 1 FROM user_mission_pool up JOIN mission_definition m ON m.id = up.mission_definition_id WHERE up.user_id = $1 AND m.type = $2 LIMIT 1`,
-    [userId, type]
-  )
-  if (rows.length) return // 이미 한 번 뽑아서 고정해뒀으면 다시 안 건드린다.
   const missionDefByCode = await getMissionDefByCode()
   for (const code of codes) {
     const def = missionDefByCode[code]
@@ -789,6 +791,7 @@ app.put('/api/state/:uid/:key', async (req, res) => {
     case 'placements':
     case 'profileCharacterId':
     case 'primaryTitleId':
+    case 'primaryBadgeId':
     case 'representativeAdultHistory':
       await pool.query(
         `INSERT INTO user_state (user_id, key, value, updated_at) VALUES ($1, $2, $3, now())
@@ -1008,7 +1011,10 @@ app.get('/api/guestbook/:ownerUid', async (req, res) => {
 // 친구 목장 방문(Friends.jsx)용 읽기 전용 스냅샷 — 대객체 위치/크기, 배치한 인테리어,
 // 서식지별 등록 현황을 돌려준다. 도감 원본 데이터(사진/그림 dataURL 등)는 내려주지 않는다.
 app.get('/api/ranch/:uid', async (req, res) => {
-  const { rows } = await pool.query('SELECT id, username, nickname FROM users WHERE uid = $1', [req.params.uid])
+  const { rows } = await pool.query(
+    'SELECT id, username, nickname, total_login_days AS "totalLoginDays" FROM users WHERE uid = $1',
+    [req.params.uid]
+  )
   const target = rows[0]
   if (!target) return res.status(404).json({ error: 'USER_NOT_FOUND' })
 
@@ -1023,12 +1029,20 @@ app.get('/api/ranch/:uid', async (req, res) => {
     habitatStats[habitat.id] = getHabitatStats(habitat.id, speciesList)
   }
 
+  // 친구 목장 방문 시 프로필 카드(FriendRanch.jsx)를 눌러 보여줄 정보 — 자기 목장 프로필
+  // 모달과 같은 항목(대표 캐릭터/도감/성장 포인트/출석/나뭇잎)을 읽기 전용으로 노출한다.
   res.json({
     nickname: target.nickname,
     positions: state.habitatPositions || null,
     scales: state.habitatScales || null,
     placements: Array.isArray(state.placements) ? state.placements : [],
     habitatStats,
+    representativeCharacter: state.representativeCharacter || null,
+    growthPoints: state.growthPoints ?? 0,
+    leaves: state.leaves ?? 0,
+    totalLoginDays: target.totalLoginDays ?? 0,
+    fieldGuideCount: speciesList.filter((s) => s.registered).length,
+    fieldGuideTotal: speciesList.length,
   })
 })
 

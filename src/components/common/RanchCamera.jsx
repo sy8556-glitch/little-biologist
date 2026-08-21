@@ -27,10 +27,22 @@ function midpoint(a, b) {
   return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }
 }
 
-export default function RanchCamera({ children }) {
+export default function RanchCamera({ children, resetSignal }) {
   const viewportRef = useRef(null)
   const [transform, setTransform] = useState({ x: 0, y: 0, zoom: 1 })
   const transformRef = useRef(transform)
+
+  // resetSignal이 바뀌면(예: 튜토리얼이 '이 곤충을 눌러보세요' 단계로 들어설 때) 카메라를 원점으로
+  // 되돌린다 — 팬/줌 상태가 남아있으면 그 값이 identity가 아니어서 transform 속성이 다시 붙고,
+  // 그러면 튜토리얼 타깃의 z-index가 튜토리얼 오버레이를 다시 못 이기게(스태킹 컨텍스트에 갇히게)
+  // 된다. 아래 style 계산은 이 값이 정확히 {0,0,1}일 때만 transform을 생략한다.
+  useEffect(() => {
+    if (resetSignal === undefined) return
+    transformRef.current = { x: 0, y: 0, zoom: 1 }
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- resetSignal이 바뀌는 순간에만 외부 신호로 카메라를 되돌린다.
+    setTransform({ x: 0, y: 0, zoom: 1 })
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- resetSignal이 바뀔 때만 리셋한다.
+  }, [resetSignal])
 
   const pointersRef = useRef(new Map())
   const gestureRef = useRef(null)
@@ -173,7 +185,15 @@ export default function RanchCamera({ children }) {
     >
       <div
         className="absolute inset-0"
-        style={{ transform: `translate(${transform.x}px, ${transform.y}px) scale(${transform.zoom})`, transformOrigin: '0 0' }}
+        // transform은 값이 identity(0,0,1)여도 새 stacking context를 만든다 — 그러면 이 안의
+        // 튜토리얼 타깃(반짝이는 곤충 등, z-[110])이 아무리 z-index를 올려도 밖에 있는 튜토리얼
+        // 오버레이(z-[100])보다 위로 못 올라가 클릭이 막힌다. 카메라를 안 움직인 기본 상태에서는
+        // transform 속성 자체를 아예 안 넣어서 그 문제를 피한다.
+        style={
+          transform.x !== 0 || transform.y !== 0 || transform.zoom !== 1
+            ? { transform: `translate(${transform.x}px, ${transform.y}px) scale(${transform.zoom})`, transformOrigin: '0 0' }
+            : undefined
+        }
       >
         {children}
       </div>

@@ -42,7 +42,7 @@ export default function Bag() {
   const displayList = isInterior ? interiorSlots : representativeSlots
 
   return (
-    <FocusedLayout title="가방" icon="🎒">
+    <FocusedLayout title="가방" iconSrc="/ui/bag.png">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div className="flex gap-2">
           {CATEGORIES.map((c) => (
@@ -79,7 +79,7 @@ export default function Bag() {
               >
                 <div className="grid h-24 w-24 place-items-center rounded-full bg-leaf-50 text-xl" aria-hidden="true">
                   {item.image ? (
-                    <img src={item.image} alt="" className="h-full w-full object-contain p-1.5" />
+                    <img src={item.image} alt="" loading="lazy" decoding="async" className="h-full w-full object-contain p-1.5" />
                   ) : (
                     '🪑'
                   )}

@@ -4,6 +4,8 @@ import FocusedLayout from '../components/common/FocusedLayout'
 import EmptyState from '../components/common/EmptyState'
 import { useAuth } from '../router/AuthContext'
 import { reportMissionEvent } from '../utils/missionEvents'
+import { NatureButton, NatureCard, NaturePage, NaturePanel, NatureSectionTitle, NatureTab } from '../components/common/NatureUI'
+import { Leaf, Search, Sprout } from 'lucide-react'
 
 // friends.md: 닉네임이 아닌 친구 ID(uid)로 검색. 실시간 대화/선물 없음, 방명록 사용.
 // screen-requirements.md §7: 친구 활동 피드 제거, 대화·선물 버튼 제거.
@@ -116,139 +118,122 @@ export default function Friends() {
   const isSearchResultSelf = searchResult && searchResult.uid === user?.uid
 
   return (
-    <FocusedLayout title="친구" icon="👥">
-      <div className="mb-4 flex gap-2">
-        {[
-          { id: 'list', label: '친구 목록' },
-          { id: 'requests', label: '친구 요청' },
-        ].map((t) => (
-          <button
-            key={t.id}
-            type="button"
-            onClick={() => setTab(t.id)}
-            className={`rounded-full px-4 py-2 text-sm font-semibold ${
-              tab === t.id ? 'bg-leaf-500 text-white' : 'bg-white text-ink-900 shadow-card'
-            }`}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
+    <FocusedLayout>
+      <NaturePage>
+        <NatureSectionTitle iconSrc="/ui/social.png" title="친구" />
 
-      <div className="grid gap-6 lg:grid-cols-[1fr_280px]">
-        <div>
-          <div className="mb-3 flex gap-2">
-            <input
-              type="text"
-              value={searchId}
-              onChange={(e) => setSearchId(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-              placeholder="친구 ID(uid)로 검색하세요"
-              className="w-full rounded-full border border-ivory-200 bg-white px-4 py-2 text-sm outline-none focus:border-leaf-500"
-            />
-            <button
-              type="button"
-              onClick={handleSearch}
-              className="shrink-0 rounded-full bg-leaf-500 px-4 py-2 text-sm font-semibold text-white hover:bg-leaf-600"
-            >
-              검색
-            </button>
-          </div>
-
-          {searchResult !== undefined && (
-            <div className="mb-3 rounded-xl bg-white p-4 shadow-card">
-              {searchResult ? (
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-semibold text-ink-900">{searchResult.nickname}</p>
-                    <p className="text-xs text-ink-700/70">{searchResult.uid}</p>
-                  </div>
-                  {isSearchResultSelf ? (
-                    <span className="text-xs text-ink-700/60">나예요</span>
-                  ) : isSearchResultFriend ? (
-                    <button
-                      type="button"
-                      onClick={() => visitFriend(searchResult)}
-                      className="rounded-full bg-ivory-100 px-4 py-2 text-xs font-semibold text-ink-900 hover:bg-ivory-200"
-                    >
-                      목장 방문
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => sendFriendRequest(searchResult.uid)}
-                      className="rounded-full bg-leaf-500 px-4 py-2 text-xs font-semibold text-white hover:bg-leaf-600"
-                    >
-                      친구 요청
-                    </button>
-                  )}
-                </div>
-              ) : (
-                <p className="text-center text-sm text-ink-700/70">해당 ID의 친구를 찾을 수 없어요</p>
-              )}
-              {searchMessage && <p className="mt-2 text-center text-xs text-ink-700/70">{searchMessage}</p>}
-            </div>
-          )}
-
-          {tab === 'list' ? (
-            <ul className="flex flex-col gap-2">
-              {friends.map((f) => (
-                <li key={f.uid} className="flex items-center justify-between rounded-xl bg-white p-4 shadow-card">
-                  <div>
-                    <p className="font-semibold text-ink-900">{f.nickname}</p>
-                    <p className="text-xs text-ink-700/70">{f.uid}</p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => visitFriend(f)}
-                    className="rounded-full bg-ivory-100 px-4 py-2 text-xs font-semibold text-ink-900 hover:bg-ivory-200"
-                  >
-                    목장 방문
-                  </button>
-                </li>
-              ))}
-              {friends.length === 0 && <EmptyState title="아직 친구가 없어요" />}
-            </ul>
-          ) : (
-            <ul className="flex flex-col gap-2">
-              {requests.map((r) => (
-                <li key={r.id} className="flex items-center justify-between rounded-xl bg-white p-4 shadow-card">
-                  <p className="font-semibold text-ink-900">{r.nickname}</p>
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => acceptRequest(r.id)}
-                      className="rounded-full bg-leaf-500 px-3 py-1.5 text-xs font-semibold text-white"
-                    >
-                      수락
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => rejectRequest(r.id)}
-                      className="rounded-full bg-ivory-100 px-3 py-1.5 text-xs font-semibold text-ink-900"
-                    >
-                      거절
-                    </button>
-                  </div>
-                </li>
-              ))}
-              {requests.length === 0 && <EmptyState title="받은 친구 요청이 없어요" />}
-            </ul>
-          )}
+        <div className="mb-5 flex flex-wrap gap-3">
+          {[
+            { id: 'list', label: '친구 목록' },
+            { id: 'requests', label: '친구 요청' },
+          ].map((t) => (
+            <NatureTab key={t.id} onClick={() => setTab(t.id)} active={tab === t.id}>
+              {t.label}
+            </NatureTab>
+          ))}
         </div>
 
-        <aside className="rounded-xl bg-white p-4 shadow-card">
-          <p className="mb-1 text-sm font-semibold text-ink-900">내 친구 ID</p>
-          <p className="mb-3 rounded-lg bg-ivory-100 px-3 py-2 text-center font-mono text-sm">{user?.uid}</p>
-          <button
-            type="button"
-            onClick={copyId}
-            className="w-full rounded-full bg-leaf-500 px-4 py-2 text-sm font-semibold text-white hover:bg-leaf-600"
-          >
-            ID 복사·공유하기
-          </button>
-        </aside>
-      </div>
+        <div className="grid gap-6 lg:grid-cols-[1fr_280px]">
+          <div>
+            <div className="mb-4 flex gap-2">
+              <div className="relative min-w-0 flex-1">
+                <Sprout className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[var(--nature-sprout)]" size={18} aria-hidden="true" />
+                <input
+                  type="text"
+                  value={searchId}
+                  onChange={(e) => setSearchId(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                  placeholder="친구 ID(uid)로 검색하세요"
+                  className="nature-input w-full px-11 py-3 text-sm outline-none focus:border-leaf-500"
+                />
+              </div>
+              <NatureButton onClick={handleSearch} className="flex shrink-0 items-center gap-2 px-5">
+                <Search size={16} aria-hidden="true" />
+                검색
+              </NatureButton>
+            </div>
+
+            {searchResult !== undefined && (
+              <NatureCard className="mb-4">
+                {searchResult ? (
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="font-semibold text-ink-900">{searchResult.nickname}</p>
+                      <p className="truncate text-xs text-ink-700/70">{searchResult.uid}</p>
+                    </div>
+                    {isSearchResultSelf ? (
+                      <span className="text-xs text-ink-700/60">나예요</span>
+                    ) : isSearchResultFriend ? (
+                      <NatureButton variant="secondary" onClick={() => visitFriend(searchResult)} className="shrink-0 px-4 py-2 text-xs">
+                        목장 방문
+                      </NatureButton>
+                    ) : (
+                      <NatureButton onClick={() => sendFriendRequest(searchResult.uid)} className="shrink-0 px-4 py-2 text-xs">
+                        친구 요청
+                      </NatureButton>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-center text-sm text-ink-700/70">해당 ID의 친구를 찾을 수 없어요</p>
+                )}
+                {searchMessage && <p className="mt-2 text-center text-xs text-ink-700/70">{searchMessage}</p>}
+              </NatureCard>
+            )}
+
+            {tab === 'list' ? (
+              <ul className="flex flex-col gap-3">
+                {friends.map((f) => (
+                  <li key={f.uid} className="nature-card flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="font-semibold text-ink-900">{f.nickname}</p>
+                      <p className="truncate text-xs text-ink-700/70">{f.uid}</p>
+                    </div>
+                    <NatureButton variant="secondary" onClick={() => visitFriend(f)} className="shrink-0 px-4 py-2 text-xs">
+                      목장 방문
+                    </NatureButton>
+                  </li>
+                ))}
+                {friends.length === 0 && (
+                  <li className="nature-empty">
+                    <div>
+                      <Sprout className="mx-auto mb-3 text-[var(--nature-green)]" size={42} aria-hidden="true" />
+                      <p className="text-lg font-black text-[var(--nature-ink)]">아직 친구가 없어요</p>
+                    </div>
+                  </li>
+                )}
+              </ul>
+            ) : (
+              <ul className="flex flex-col gap-3">
+                {requests.map((r) => (
+                  <li key={r.id} className="nature-card flex items-center justify-between gap-3">
+                    <p className="font-semibold text-ink-900">{r.nickname}</p>
+                    <div className="flex gap-2">
+                      <NatureButton onClick={() => acceptRequest(r.id)} className="px-3 py-1.5 text-xs">
+                        수락
+                      </NatureButton>
+                      <NatureButton variant="secondary" onClick={() => rejectRequest(r.id)} className="px-3 py-1.5 text-xs">
+                        거절
+                      </NatureButton>
+                    </div>
+                  </li>
+                ))}
+                {requests.length === 0 && <EmptyState title="받은 친구 요청이 없어요" />}
+              </ul>
+            )}
+          </div>
+
+          <NaturePanel className="self-start">
+            <p className="mb-3 flex items-center gap-2 text-lg font-black text-[var(--nature-ink)]">
+              <Leaf size={18} className="text-[var(--nature-green)]" aria-hidden="true" />
+              나의 ID
+            </p>
+            <p className="mb-4 rounded-2xl border border-[var(--nature-line)] bg-[#fff7e6] px-3 py-3 text-center font-mono text-sm text-[var(--nature-ink)]">{user?.uid}</p>
+            <NatureButton onClick={copyId} className="w-full">
+              ID 복사·공유하기
+            </NatureButton>
+          </NaturePanel>
+        </div>
+      </NaturePage>
     </FocusedLayout>
   )
 }

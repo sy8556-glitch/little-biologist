@@ -19,6 +19,7 @@ const STEPS = [
   { id: 'welcome', title: '신비한 알 기르기 안내', description: '반가워요! 귀여운 첫 알을 얻었네요. 이 알이 어떻게 멋진 생물 친구가 되는지 알려줄게요!' },
   { id: 'ranch', title: '목장을 둘러봐요', description: '나와 발견한 생물들이 모이는 나만의 자연 목장이에요.' },
   { id: 'random-insect', title: '첫 생물을 만나봐요', description: '목장 위에 반짝이는 생물 흔적이 나타나면 눌러서 첫 생물을 등록해 보세요.', actionLabel: '반짝이는 생물을 눌러 보세요' },
+  { id: 'return-to-ranch', title: '다시 목장으로 가요', description: '도감을 확인했으니 이제 다시 목장으로 돌아가 볼까요?', actionLabel: '목장으로 돌아가기 버튼을 눌러 보세요' },
   { id: 'habitat', title: '서식지로 가 볼까요?', description: '반짝이는 표시가 있는 서식지를 눌러 관찰을 시작해 보세요.', actionLabel: '반짝이는 서식지를 눌러 보세요' },
   { id: 'insect', title: '곤충을 관찰해요', description: '통통 튀는 표시가 있는 곤충을 눌러 자세한 특징을 확인해 보세요.', actionLabel: '표시된 곤충을 눌러 보세요' },
   { id: 'field-guide', title: '도감에 기록해요', description: '발견한 곤충은 도감에서 다시 확인하고 특징을 살펴볼 수 있어요.' },
@@ -34,13 +35,20 @@ const EGG_GROWTH_CARDS = [
   ['Step 3', '가방에 보관하기', '완성된 친구는 가방에 보관되고, 새로운 곤충 알을 또 선물받아요.'],
 ]
 
+// insect 단계는 targetHabitatId(3단계에서 잡은 곤충의 서식지)에 맞는 서식지로 가야 한다 —
+// 예전엔 '/ranch/forest'로 고정돼 있어서, 숲이 아닌 서식지(가로수 등)의 곤충을 잡은 계정은
+// '돌아가기'를 누르면 엉뚱한(숲) 서식지로 돌려보내져 관찰할 곤충이 없는 채로 튜토리얼이 막혔다.
 const STEP_ROUTES = {
-  insect: '/ranch/forest',
   'field-guide': '/field-guide',
   exploration: '/exploration',
   quests: '/quests',
   bag: '/bag',
 }
+
+// 탐험도우미(도움말) 버튼으로 튜토리얼을 다시 볼 때는 이 두 단계를 건너뛴다 — 둘 다 최초 1회용
+// 액션(반짝이 곤충 강제 출몰, 도감→목장 이동 유도)이라 이미 곤충을 잡아본 계정이 다시 겪으면
+// 어색하고, random-insect 단계는 재출몰 대기시간과 무관하게 반짝이를 강제로 띄워버린다.
+const SKIP_ON_HELP_RESTART = new Set(['random-insect', 'return-to-ranch'])
 
 const TutorialContext = createContext(null)
 
@@ -105,6 +113,9 @@ export function TutorialProvider({ children }) {
   const [eggGrantReady, setEggGrantReady] = useState(!location.state?.firstLogin)
   const [targetHabitatId, setTargetHabitatId] = useState(() => readTargetHabitatId(user?.uid))
   const [targetSpeciesId, setTargetSpeciesId] = useState(() => readTargetSpeciesId(user?.uid))
+  // 탐험도우미 버튼으로 다시 보는 중인지 여부 — 이 동안만 advance()가 SKIP_ON_HELP_RESTART
+  // 단계를 건너뛴다. 최초 로그인 튜토리얼은 이 값이 항상 false라 전체 단계를 그대로 다 본다.
+  const [isHelpRestart, setIsHelpRestart] = useState(false)
 
   useEffect(() => {
     if (!location.state?.firstLogin) {
@@ -113,6 +124,7 @@ export function TutorialProvider({ children }) {
     }
     setStepIndex(null)
     setEggGrantReady(false)
+    setIsHelpRestart(false)
     const handleEggGrantClosed = () => setEggGrantReady(true)
     window.addEventListener(EGG_GRANT_CLOSED_EVENT, handleEggGrantClosed)
     return () => window.removeEventListener(EGG_GRANT_CLOSED_EVENT, handleEggGrantClosed)
@@ -147,23 +159,43 @@ export function TutorialProvider({ children }) {
   useEffect(() => {
     if (stepIndex === null) return
     const step = STEPS[stepIndex]
-    const route = STEP_ROUTES[step?.id]
-    if (route && location.pathname === '/ranch') {
-      navigate(route, { replace: true })
+    if (location.pathname !== '/ranch') return
+    // bag 단계에서 가방 아이템의 "목장에 배치"를 누르면 editPlacementId를 들고 /ranch로
+    // 온다 — 이때 이 효과가 곧바로 /bag로 되돌려버리면 배치를 끝까지 해볼 수가 없다.
+    if (location.state?.editPlacementId) return
+    if (step?.id === 'insect') {
+      navigate(`/ranch/${targetHabitatId ?? 'forest'}`, { replace: true })
+      return
     }
-  }, [location.pathname, navigate, stepIndex])
+    const route = STEP_ROUTES[step?.id]
+    if (route) navigate(route, { replace: true })
+  }, [location.pathname, location.state?.editPlacementId, navigate, stepIndex, targetHabitatId])
 
   const isWaitingForEggGrant = Boolean(location.state?.firstLogin && !eggGrantReady)
   const isAuthScreen = location.pathname === '/login' || location.pathname === '/signup'
 
+  // 탐험도우미로 다시 볼 때는 SKIP_ON_HELP_RESTART 2단계가 실제로 안 보이니, 안내 문구의
+  // "n/전체"도 STEPS.length(10)가 아니라 실제로 보게 될 단계 수(8) 기준으로 맞춘다.
+  const totalSteps = isHelpRestart ? STEPS.length - SKIP_ON_HELP_RESTART.size : STEPS.length
+  const stepNumber = stepIndex === null
+    ? null
+    : isHelpRestart
+      ? STEPS.slice(0, stepIndex + 1).filter((s) => !SKIP_ON_HELP_RESTART.has(s.id)).length
+      : stepIndex + 1
+
   const value = useMemo(() => ({
     step: isAuthScreen || isWaitingForEggGrant || stepIndex === null ? null : STEPS[stepIndex],
     stepIndex,
-    totalSteps: STEPS.length,
+    stepNumber,
+    totalSteps,
     advance() {
       setStepIndex((current) => {
         if (current === null) return current
-        const next = Math.min(current + 1, STEPS.length - 1)
+        let next = current + 1
+        if (isHelpRestart) {
+          while (next < STEPS.length && SKIP_ON_HELP_RESTART.has(STEPS[next]?.id)) next += 1
+        }
+        next = Math.min(next, STEPS.length - 1)
         saveTutorialProgress(user?.uid, next)
         return next
       })
@@ -182,8 +214,11 @@ export function TutorialProvider({ children }) {
     },
     close() {
       markTutorialCompleted(user?.uid)
+      setIsHelpRestart(false)
       setStepIndex(null)
     },
+    // 탐험도우미 버튼 — 완료 여부와 무관하게 튜토리얼을 처음부터 다시 보여주되, 최초 1회용
+    // 액션 단계(SKIP_ON_HELP_RESTART)는 건너뛴다.
     restart() {
       localStorage.removeItem(scopedKey(STORAGE_KEY, user?.uid))
       localStorage.removeItem(STORAGE_KEY)
@@ -194,10 +229,11 @@ export function TutorialProvider({ children }) {
       setTargetHabitatId(null)
       setTargetSpeciesId(null)
       setEggGrantReady(true)
+      setIsHelpRestart(true)
       setStepIndex(0)
       navigate('/ranch')
     },
-  }), [eggGrantReady, isAuthScreen, isWaitingForEggGrant, location.state?.firstLogin, navigate, stepIndex, targetHabitatId, targetSpeciesId, user?.uid])
+  }), [eggGrantReady, isAuthScreen, isHelpRestart, isWaitingForEggGrant, location.state?.firstLogin, navigate, stepIndex, stepNumber, targetHabitatId, targetSpeciesId, totalSteps, user?.uid])
 
   return <TutorialContext.Provider value={value}>{children}<TutorialOverlay /></TutorialContext.Provider>
 }
@@ -209,7 +245,7 @@ export function useTutorial() {
 }
 
 function TutorialOverlay() {
-  const { step, stepIndex, totalSteps, advance, close } = useTutorial()
+  const { step, stepNumber, totalSteps, advance, close } = useTutorial()
   const { featuredCharacterImage } = useQuests()
   const navigate = useNavigate()
   const [isClosing, setIsClosing] = useState(false)
@@ -228,12 +264,26 @@ function TutorialOverlay() {
     exploration: '/quests',
     quests: '/bag',
   }[step.id]
-  const needsAction = step.id === 'random-insect' || step.id === 'habitat' || step.id === 'insect'
-  const actionPositionClass = step.id === 'insect'
+  const needsAction =
+    step.id === 'random-insect' || step.id === 'return-to-ranch' || step.id === 'habitat' || step.id === 'insect'
+  // field-guide/exploration/quests/bag는 액션 없이 그냥 페이지를 보여주는 안내라, 화면 가운데를
+  // 블러로 덮으면 지금 어느 화면인지 알아보기 어렵다는 피드백이 있었다 — needsAction 단계와 같은
+  // 구석 배치(+블러 없음)로 통일한다.
+  const isPageStep = step.id === 'field-guide' || step.id === 'exploration' || step.id === 'quests' || step.id === 'bag'
+  const isCompact = needsAction || isPageStep
+  const isRightSide = step.id === 'insect' || isPageStep
+  const actionPositionClass = isRightSide
     ? 'right-3 bottom-4 w-[min(92vw,24rem)] items-end justify-end gap-1 sm:right-5 sm:bottom-5'
     : 'left-3 bottom-4 w-[min(92vw,24rem)] items-end justify-start gap-1 sm:left-5 sm:bottom-5'
   const isLastStep = step.id === 'bag'
   const isWelcomeStep = step.id === 'welcome'
+  // bag 단계는 안내 문구대로 실제 가방 아이템의 "목장에 배치"까지 눌러볼 수 있어야 한다 — 특정
+  // 타깃 하나만 z-index로 뚫어주는 needsAction 방식과 달리 어떤 아이템 버튼을 눌러도 되는
+  // 상황이라, 이 단계만 배경 락을 걸지 않는다.
+  // return-to-ranch 단계도 도감(FieldGuide) 화면의 "목장으로 돌아가기" 버튼을 눌러야 하는데,
+  // 그 버튼을 감싸는 FocusedLayout 루트가 isolation:isolate라 z-index로는 락을 못 뚫는다
+  // (RanchCamera의 transform과 같은 종류의 stacking context 트랩) — 그래서 이 단계도 락을 건다.
+  const shouldLockBackground = step.id !== 'bag' && step.id !== 'return-to-ranch'
 
   function finish() {
     playSfx(SFX.buttonTutorial)
@@ -255,8 +305,15 @@ function TutorialOverlay() {
   }
 
   return (
-    <div className="pointer-events-none fixed inset-0 z-[100] overflow-hidden" aria-live="polite">
-      {!needsAction && (
+    // pointer-events-auto로 바꿔서, 팝업/타깃(z-[110]으로 띄운 반짝이 곤충·서식지·곤충 카드)을
+    // 제외한 나머지 화면(하단 내비 등)이 튜토리얼 중에 눌리지 않게 막는다. 이전엔 none이라
+    // 배경이 그대로 클릭돼서 다른 화면으로 넘어가 버리는 문제가 있었다. bag 단계만 예외
+    // (shouldLockBackground 주석 참고).
+    <div
+      className={`${shouldLockBackground ? 'pointer-events-auto' : 'pointer-events-none'} fixed inset-0 z-[100] overflow-hidden`}
+      aria-live="polite"
+    >
+      {!isCompact && (
         <div
           className={`absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity duration-300 ${
             isClosing ? 'opacity-0' : 'opacity-100'
@@ -266,18 +323,18 @@ function TutorialOverlay() {
 
       <div
         className={`tutorial-helper-stage absolute flex transition-all duration-300 ease-out ${
-          needsAction
+          isCompact
             ? actionPositionClass
             : 'left-1/2 top-1/2 w-[min(94vw,43rem)] -translate-x-1/2 -translate-y-1/2 flex-col-reverse items-center justify-center gap-0 sm:w-[min(90vw,45rem)] sm:flex-row'
         } ${isClosing ? 'scale-50 opacity-0' : 'scale-100 opacity-100'}`}
       >
         <div className={`pointer-events-none relative z-20 transition-transform duration-300 ease-out ${
-          needsAction ? 'w-20 shrink-0 sm:w-24' : '-mt-2 sm:-mr-2 sm:mt-0 sm:scale-125'
+          isCompact ? 'w-20 shrink-0 sm:w-24' : '-mt-2 sm:-mr-2 sm:mt-0 sm:scale-125'
         }`}>
           <div
             key={bounceKey}
             className={`tutorial-egg-character relative grid place-items-center animate-[tutorial-bounce_300ms_ease-out] ${
-              needsAction ? 'h-20 w-20 sm:h-24 sm:w-24' : 'h-32 w-32 sm:h-36 sm:w-36'
+              isCompact ? 'h-20 w-20 sm:h-24 sm:w-24' : 'h-32 w-32 sm:h-36 sm:w-36'
             }`}
           >
             <img className="h-full w-full object-contain" src={eggImage} alt="탐험도우미" />
@@ -290,26 +347,26 @@ function TutorialOverlay() {
           aria-label="탐험도우미 튜토리얼"
           data-click-sfx="none"
           className={`tutorial-speech-bubble pointer-events-auto relative z-10 rounded-3xl bg-amber-50/95 shadow-xl ring-2 ring-amber-300/70 backdrop-blur ${
-            needsAction ? 'w-[min(72vw,18rem)] px-4 py-3' : 'w-[min(88vw,27rem)] px-5 py-5 sm:w-[27rem] sm:px-6'
+            isCompact ? 'w-[min(72vw,18rem)] px-4 py-3' : 'w-[min(88vw,27rem)] px-5 py-5 sm:w-[27rem] sm:px-6'
           }`}
         >
           <span
             className={`tutorial-speech-tail absolute h-6 w-6 rotate-45 bg-amber-50 ring-2 ring-amber-300/70 ${
-              needsAction
-                ? step.id === 'insect' ? '-right-2 bottom-7' : '-left-2 bottom-7'
+              isCompact
+                ? isRightSide ? '-right-2 bottom-7' : '-left-2 bottom-7'
                 : '-bottom-3 left-1/2 -translate-x-1/2 sm:-left-3 sm:bottom-1/2 sm:translate-x-0 sm:translate-y-1/2'
             }`}
             aria-hidden="true"
           />
           <div className="relative">
             <div className="mb-2 flex items-center justify-between gap-3">
-              <span className={`${needsAction ? 'text-xs' : 'text-sm'} font-black text-leaf-700`}>튜토리얼 {stepIndex + 1}/{totalSteps}</span>
-              <button type="button" onClick={finish} className={`${needsAction ? 'text-xs' : 'text-sm'} rounded-full px-2 py-1 font-black text-ink-700/60 hover:bg-white/70 hover:text-ink-900`}>
+              <span className={`${isCompact ? 'text-xs' : 'text-sm'} font-black text-leaf-700`}>튜토리얼 {stepNumber}/{totalSteps}</span>
+              <button type="button" onClick={finish} className={`${isCompact ? 'text-xs' : 'text-sm'} rounded-full px-2 py-1 font-black text-ink-700/60 hover:bg-white/70 hover:text-ink-900`}>
                 건너뛰기
               </button>
             </div>
-            <h2 className={`${needsAction ? 'text-lg' : 'text-2xl'} font-black text-ink-900`}>{step.title}</h2>
-            <p className={`${needsAction ? 'mt-1 text-sm leading-6' : 'mt-3 text-base leading-7'} font-bold text-ink-700/80`}>{step.description}</p>
+            <h2 className={`${isCompact ? 'text-lg' : 'text-2xl'} font-black text-ink-900`}>{step.title}</h2>
+            <p className={`${isCompact ? 'mt-1 text-sm leading-6' : 'mt-3 text-base leading-7'} font-bold text-ink-700/80`}>{step.description}</p>
 
             {isWelcomeStep && (
               <div className="mt-4 grid gap-2.5 text-left">

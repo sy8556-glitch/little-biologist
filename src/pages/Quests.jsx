@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import FocusedLayout from '../components/common/FocusedLayout'
 import CharacterDialogue from '../components/common/CharacterDialogue'
 import EmptyState from '../components/common/EmptyState'
 import ResultModal from '../components/common/ResultModal'
 import { useQuests } from '../context/QuestsContext'
+import { useCurrency } from '../context/CurrencyContext'
 import { playSfx } from '../utils/sound'
 import { SFX } from '../utils/sfx'
 
@@ -57,16 +58,25 @@ const TABS = [
   { id: 'title', label: '칭호' },
   { id: 'event', label: '이벤트' },
 ]
-// TEMP(실험용, 되돌릴 것): 원래는 4였다. 탭 안의 미션을 페이지로 나누지 않고 한 번에 다 보여주려고
-// 임시로 무제한으로 바꿔둠 — 실험이 끝나면 4로 되돌린다.
-const MISSIONS_PER_PAGE = Number.MAX_SAFE_INTEGER
+const MISSIONS_PER_PAGE = 4
 
 export default function Quests() {
   const [tab, setTab] = useState('daily')
   const [page, setPage] = useState(0)
   const { quests, claim, featuredCharacterImage, missionGrowthReward } = useQuests()
+  const { holdStageUp, releaseStageUp } = useCurrency()
   const [claimedReward, setClaimedReward] = useState(null)
   const [showRewardBurst, setShowRewardBurst] = useState(false)
+  // holdStageUp()을 부른 채로 확인 팝업을 안 닫고 다른 화면으로 나가버리면 부화/진화 연출이
+  // 영영 안 뜨게 되므로, 언마운트 시 안전하게 풀어준다.
+  const isHoldingStageUpRef = useRef(false)
+
+  useEffect(() => {
+    return () => {
+      if (isHoldingStageUpRef.current) releaseStageUp()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- 언마운트 시 한 번만 정리한다.
+  }, [])
 
   const list = quests[tab]
   const totalPages = Math.max(1, Math.ceil(list.length / MISSIONS_PER_PAGE))
@@ -85,6 +95,10 @@ export default function Quests() {
       setClaimedReward({ ...quest, alreadyClaimed: true })
       return
     }
+    // 보상 확인 팝업이 떠 있는 동안엔 부화/진화 연출이 그 위를 덮지 않게 잡아뒀다가,
+    // 팝업을 닫을 때(ResultModal의 onConfirm)에야 풀어준다.
+    holdStageUp()
+    isHoldingStageUpRef.current = true
     claim(tab, id)
     playSfx(tab === 'title' ? SFX.titleReward : SFX.missionReward)
     setClaimedReward({ ...quest, alreadyClaimed: false })
@@ -92,7 +106,7 @@ export default function Quests() {
   }
 
   return (
-    <FocusedLayout title="미션" icon="🗒️">
+    <FocusedLayout title="미션" iconSrc="/ui/mission.png">
       <div className="grid gap-6 lg:grid-cols-[1fr_260px]">
         <div>
           <div className="mb-4 flex gap-2">
@@ -143,7 +157,7 @@ export default function Quests() {
                   </div>
                   <div className="mt-1 flex items-center justify-between text-xs text-ink-700/70">
                     <span>{q.progress}/{q.total}</span>
-                    <span>{q.titleReward ? '👑 칭호' : q.badgeName ? '🏅 배지' : `🍃 ${q.rewardLeaf}`}</span>
+                    <span>{q.titleReward ? '칭호' : q.badgeName ? '배지' : `나뭇잎 ${q.rewardLeaf}`}</span>
                   </div>
                 </li>
               ))}
@@ -179,15 +193,14 @@ export default function Quests() {
             speakerAlt="대표 캐릭터"
           >
             <p className="font-semibold">오늘도 힘내봐요!</p>
-            <p className="mt-1 text-ink-700/80">미션을 완료하면 저도 함께 성장해요 🥚</p>
+            <p className="mt-1 text-ink-700/80">미션을 완료하면 저도 함께 성장해요.</p>
           </CharacterDialogue>
         </aside>
       </div>
 
       <ResultModal
         open={Boolean(claimedReward)}
-        emoji={claimedReward?.titleReward ? '👑' : '🎉'}
-        imageSrc={claimedReward?.badgeImage}
+        imageSrc="/ui/mission-success-check.svg"
         title={
           claimedReward?.alreadyClaimed
             ? '이미 수령한 미션이에요'
@@ -201,14 +214,20 @@ export default function Quests() {
           claimedReward?.alreadyClaimed
             ? '이 미션의 보상은 이미 계정에 지급되었어요.'
             : claimedReward?.titleReward
-              ? `🍃 나뭇잎 ${claimedReward.rewardLeaf}개와 🥚 알 성장 포인트 ${missionGrowthReward}, "${claimedReward.title}" 칭호를 획득했어요.`
+              ? `나뭇잎 ${claimedReward.rewardLeaf}개와 알 성장 포인트 ${missionGrowthReward}, "${claimedReward.title}" 칭호를 획득했어요.`
               : claimedReward?.badgeName
-                ? `${claimedReward.badgeName}와 🥚 알 성장 포인트 ${missionGrowthReward}을 획득했어요.`
+                ? `${claimedReward.badgeName}와 알 성장 포인트 ${missionGrowthReward}을 획득했어요.`
                 : claimedReward
-                  ? `🍃 나뭇잎 ${claimedReward.rewardLeaf}개와 🥚 알 성장 포인트 ${missionGrowthReward}을 획득했어요.`
+                  ? `나뭇잎 ${claimedReward.rewardLeaf}개와 알 성장 포인트 ${missionGrowthReward}을 획득했어요.`
                   : ''
         }
-        onConfirm={() => setClaimedReward(null)}
+        onConfirm={() => {
+          if (claimedReward && !claimedReward.alreadyClaimed) {
+            releaseStageUp()
+            isHoldingStageUpRef.current = false
+          }
+          setClaimedReward(null)
+        }}
       />
       {showRewardBurst && <MissionRewardBurst onComplete={() => setShowRewardBurst(false)} />}
     </FocusedLayout>

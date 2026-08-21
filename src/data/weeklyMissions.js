@@ -11,9 +11,7 @@ export const WEEKLY_MISSION_CANDIDATES = [
   { id: 'weekly-daily-streak', title: '성실한 생물학자', desc: '일일 미션을 누적 15개 완료하기', event: 'daily_mission_completed', total: 15 },
 ]
 
-// TEMP(실험용, 되돌릴 것): 원래는 3이었다. 후보 전체를 다 보여주려고 임시로 큰 값으로 바꿔둠 —
-// 실험이 끝나면 3으로 되돌린다.
-export const WEEKLY_MISSION_COUNT = WEEKLY_MISSION_CANDIDATES.length
+export const WEEKLY_MISSION_COUNT = 3
 
 export function getWeekKey(date = new Date()) {
   const day = date.getDay()

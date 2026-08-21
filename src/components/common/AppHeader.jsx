@@ -22,7 +22,7 @@ export default function AppHeader({ leftSlot }) {
         <button
           type="button"
           onClick={() => navigate('/profile')}
-          className="flex items-center gap-2 rounded-full px-1 py-1 hover:bg-ivory-100"
+          className="flex min-w-0 items-center gap-2 rounded-full px-1 py-1 hover:bg-ivory-100"
         >
           <span className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-full bg-leaf-100" aria-hidden="true">
             {featuredCharacterImage ? (
@@ -31,8 +31,8 @@ export default function AppHeader({ leftSlot }) {
               <span className="text-lg">🦋</span>
             )}
           </span>
-          <span className="flex items-center gap-2 text-left">
-            <span className="block whitespace-nowrap text-sm font-semibold text-ink-900">{user?.nickname}</span>
+          <span className="flex min-w-0 items-center gap-2 text-left">
+            <span className="block max-w-[8rem] truncate text-sm font-semibold text-ink-900">{user?.nickname}</span>
             <span className="flex items-center gap-1.5">
               <span
                 data-reward-target="growth-points"
@@ -62,17 +62,17 @@ export default function AppHeader({ leftSlot }) {
           type="button"
           aria-label="알림"
           onClick={() => setIsAnnouncementOpen(true)}
-          className="grid h-10 w-10 place-items-center rounded-full bg-white shadow-card hover:bg-ivory-100"
+          className="ranch-top-icon-button"
         >
-          🔔
+          <img src="/ui/alarm-icon-sq.png" alt="" aria-hidden="true" />
         </button>
         <button
           type="button"
           aria-label="설정"
           onClick={() => navigate('/profile/edit')}
-          className="grid h-10 w-10 place-items-center rounded-full bg-white shadow-card hover:bg-ivory-100"
+          className="ranch-top-icon-button"
         >
-          ⚙️
+          <img src="/ui/settings-icon-v3.png" alt="" aria-hidden="true" />
         </button>
       </div>
       <AnnouncementBoard open={isAnnouncementOpen} onClose={() => setIsAnnouncementOpen(false)} />

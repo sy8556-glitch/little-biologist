@@ -3,18 +3,18 @@ import { useTutorial } from '../../context/TutorialContext'
 
 // system-flow.md §1 Main Navigation: 목장 → 탐험 / 도감 / 퀘스트 / 친구 / 상점 / AI 말벗
 const NAV_ITEMS = [
-  { to: '/exploration', label: '탐험', emoji: '🧭' },
-  { to: '/field-guide', label: '도감', emoji: '📖' },
-  { to: '/quests', label: '미션', emoji: '🗒️' },
-  { to: '/friends', label: '친구', emoji: '👥' },
-  { to: '/shop', label: '상점', emoji: '🏪' },
+  { to: '/exploration', label: '탐험', iconSrc: '/ui/explore.png' },
+  { to: '/field-guide', label: '도감', iconSrc: '/ui/guide.png' },
+  { to: '/quests', label: '미션', iconSrc: '/ui/mission.png' },
+  { to: '/friends', label: '친구', iconSrc: '/ui/social.png' },
+  { to: '/shop', label: '상점', iconSrc: '/ui/shop.png' },
   { to: '/ai-companion', label: 'AI 말벗', emoji: '🤖' },
 ]
 
 export default function BottomNav() {
   const { step } = useTutorial()
   return (
-    <nav className="sticky bottom-0 z-40 shrink-0 border-t border-ivory-200 bg-ivory-50/95 backdrop-blur">
+    <nav className={`sticky bottom-0 z-40 shrink-0 border-t border-ivory-200 bg-ivory-50/95 backdrop-blur transition-opacity ${step ? 'pointer-events-none opacity-0' : ''}`}>
       <ul className="mx-auto flex max-w-3xl justify-between px-2 py-2">
         {NAV_ITEMS.map((item) => (
           <li key={item.to}>
@@ -32,7 +32,13 @@ export default function BottomNav() {
                   <span className="rounded-full bg-ink-900/85 px-2.5 py-1 text-[10px] font-bold text-white shadow-card">여기를 눌러보세요</span>
                 </span>
               )}
-              <span className="text-lg" aria-hidden="true">{item.emoji}</span>
+              {item.iconSrc ? (
+                <span className="grid h-10 w-10 place-items-center bg-transparent" aria-hidden="true">
+                  <img src={item.iconSrc} alt="" className="h-8 w-8 object-contain drop-shadow-sm" />
+                </span>
+              ) : (
+                <span className="text-lg" aria-hidden="true">{item.emoji}</span>
+              )}
               {item.label}
             </NavLink>
           </li>

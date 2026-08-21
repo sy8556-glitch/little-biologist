@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import FocusedLayout from '../components/common/FocusedLayout'
 import InsectCard from '../components/common/InsectCard'
@@ -100,7 +101,7 @@ export default function FriendFieldGuide() {
 
   if (isLoading) {
     return (
-      <FocusedLayout title="도감" icon="📖" backTo={`/friends/ranch/${uid}`} backLabel="목장으로 돌아가기">
+      <FocusedLayout title="도감" iconSrc="/ui/guide.png" backTo={`/friends/ranch/${uid}`} backLabel="목장으로 돌아가기">
         <p className="py-20 text-center text-sm text-ink-700/60">불러오는 중...</p>
       </FocusedLayout>
     )
@@ -109,32 +110,28 @@ export default function FriendFieldGuide() {
   return (
     <FocusedLayout
       title={`${nickname || '친구'}님의 도감`}
-      icon="📖"
+      iconSrc="/ui/guide.png"
       backTo={`/friends/ranch/${uid}`}
       backLabel="목장으로 돌아가기"
     >
       <div className="mb-4 flex flex-wrap items-center justify-between gap-4 border-b border-ivory-200 pb-4">
-        <div className="w-52 rounded-xl border border-ivory-200 bg-white px-3 py-2 shadow-card">
-          <div className="mb-1 flex items-center justify-between text-xs font-bold text-ink-700">
-            <span>도감 채우기</span>
-            <span className="tabular-nums">{registeredPercent}%</span>
+        <div className="field-guide-progress-actions">
+          <div className="w-52 rounded-xl border border-ivory-200 bg-white px-3 py-2 shadow-card">
+            <div className="mb-1 flex items-center justify-between text-xs font-bold text-ink-700">
+              <span>도감 채우기</span>
+              <span className="tabular-nums">{registeredPercent}%</span>
+            </div>
+            <div className="h-2 overflow-hidden rounded-full bg-ivory-200">
+              <div className="h-full rounded-full bg-leaf-500 transition-all" style={{ width: `${registeredPercent}%` }} />
+            </div>
+            <p className="mt-1 text-center text-xs font-bold text-leaf-700 tabular-nums">
+              {registeredCount}/{speciesList.length}종
+            </p>
           </div>
-          <div className="h-2 overflow-hidden rounded-full bg-ivory-200">
-            <div className="h-full rounded-full bg-leaf-500 transition-all" style={{ width: `${registeredPercent}%` }} />
-          </div>
-          <p className="mt-1 text-center text-xs font-bold text-leaf-700 tabular-nums">
-            {registeredCount}/{speciesList.length}종
-          </p>
+
         </div>
 
         <div className="flex flex-wrap items-center justify-end gap-3">
-          <button
-            type="button"
-            onClick={() => setIsPyramidOpen(true)}
-            className="rounded-full bg-leaf-500 px-4 py-2 text-sm font-semibold text-white hover:bg-leaf-600"
-          >
-            먹이사슬 피라미드 보기
-          </button>
 
           <label className="relative w-48 shrink-0">
             <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-ink-700/45" aria-hidden="true">
@@ -148,6 +145,15 @@ export default function FriendFieldGuide() {
               className="w-full rounded-full border border-ivory-200 bg-white py-2 pl-9 pr-3 text-sm outline-none focus:border-leaf-500"
             />
           </label>
+
+          <button
+            type="button"
+            onClick={() => setIsPyramidOpen(true)}
+            className="field-guide-pyramid-button"
+            aria-label="먹이사슬 피라미드 보기"
+          >
+            <img src="/ui/food-pyramid/title-cropped.png" alt="먹이사슬 피라미드 보기" />
+          </button>
         </div>
       </div>
 
@@ -260,11 +266,8 @@ export default function FriendFieldGuide() {
                         src={selected.defaultUrl ?? selected.image}
                         alt=""
                         aria-hidden="true"
-                        className="h-56 w-full object-contain p-3 grayscale opacity-25 brightness-75"
+                        className="h-56 w-full object-contain p-3 grayscale brightness-0 opacity-35"
                       />
-                      <div className="absolute inset-0 grid place-items-center">
-                        <div className="grid h-16 w-16 place-items-center rounded-full bg-white/90 text-2xl text-ink-700/45 shadow-sm">🔒</div>
-                      </div>
                       <div className="absolute bottom-3 left-0 right-0 text-center">
                         <p className="text-sm font-semibold text-ink-700/55">아직 등록되지 않은 등급이에요.</p>
                       </div>
@@ -319,19 +322,23 @@ export default function FriendFieldGuide() {
         </aside>
       </div>
 
-      {isPyramidOpen && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-label="곤충 도감 80종 먹이사슬 피라미드"
-          className="fixed inset-0 z-50 grid place-items-center bg-ink-900/55 p-3"
-          onClick={() => setIsPyramidOpen(false)}
-        >
-          <div onClick={(event) => event.stopPropagation()}>
-            <FoodPyramid onClose={() => setIsPyramidOpen(false)} speciesList={speciesList} />
-          </div>
-        </div>
-      )}
+      {isPyramidOpen &&
+        createPortal(
+          // body에 직접 portal로 붙여야 한다 — FocusedLayout의 backdrop-blur 조상 안에서 렌더링되면
+          // fixed의 기준이 뷰포트가 아니라 그 조상의 콘텐츠 박스 전체가 되어, X 버튼이 잘리는 문제가 생긴다.
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="곤충 도감 80종 먹이사슬 피라미드"
+            className="fixed inset-0 z-50 grid place-items-center bg-ink-900/55 p-3"
+            onClick={() => setIsPyramidOpen(false)}
+          >
+            <div onClick={(event) => event.stopPropagation()}>
+              <FoodPyramid onClose={() => setIsPyramidOpen(false)} speciesList={speciesList} />
+            </div>
+          </div>,
+          document.body,
+        )}
     </FocusedLayout>
   )
 }

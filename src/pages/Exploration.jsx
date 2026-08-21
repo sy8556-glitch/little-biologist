@@ -8,10 +8,14 @@ import InsectCard from '../components/common/InsectCard'
 import DrawingCanvas from '../components/common/DrawingCanvas'
 import { useNavigate } from 'react-router-dom'
 import NeighborhoodMap from '../components/common/NeighborhoodMap'
+import { NaturePage, NatureSectionTitle } from '../components/common/NatureUI'
+import { Camera, Leaf, PencilLine } from 'lucide-react'
 import { useRegisteredPhotos } from '../context/RegisteredPhotosContext'
 import { useAuth } from '../router/AuthContext'
 import { INSECT_SPECIES, getInsectSpecies, DEMO_ACCOUNT_USERNAME } from '../data/insectSpecies'
 import { getInsectDrawingGuide } from '../data/insectDrawingGuides'
+import { playSfx } from '../utils/sound'
+import { SFX } from '../utils/sfx'
 import { reportMissionEvent } from '../utils/missionEvents'
 
 function readFileAsDataUrl(file) {
@@ -70,6 +74,7 @@ export default function Exploration() {
   const { registerGoldPhoto, registerSilverSketch } = useRegisteredPhotos()
   const [status, setStatus] = useState('idle')
   const [candidates, setCandidates] = useState([])
+  const [candidatePage, setCandidatePage] = useState(0)
   // [수정] 이전에는 렌더링 중(JSX 안)에서 Math.random()을 직접 호출해서
   // 무관한 리렌더링에도 힌트 문구가 계속 바뀌는 React purity 규칙 위반이 있었다.
   // 이제는 결과가 확정되는 이벤트 핸들러 안에서 한 번만 뽑아 상태로 고정한다.
@@ -142,7 +147,41 @@ export default function Exploration() {
     setDrawingHints({ wings: '', head: '', color: '', pattern: '', legs: '' })
     setTraceQuery('')
     setTracedSpecies(null)
+    setCandidates([])
+    setCandidatePage(0)
     setStatus('idle')
+  }
+
+  function goBackToPhotoUpload() {
+    goBackToIdle()
+    setStatus('photoUpload')
+  }
+
+  // "이 중에는 없어요" 버튼 — 다음 3개를 마저 보여주고, 더 이상 없으면 아직 안 보여준 종
+  // 중에서 무작위로 몇 개를 추가 후보로 채운다. 이 추가 후보는 실제 분석 결과가 아니라서
+  // 신뢰도를 매길 수 없으므로 confidence를 null로 두고 화면에는 "추가 후보"로 표시한다.
+  function showMoreCandidates() {
+    if ((candidatePage + 1) * 3 < candidates.length) {
+      setCandidatePage((page) => page + 1)
+      return
+    }
+    const shownNames = new Set(candidates.map((candidate) => candidate.name))
+    const additionalCandidates = getInsectSpecies(isDemoAccount)
+      .filter((species) => !shownNames.has(species.name))
+      .sort(() => Math.random() - 0.5)
+      .slice(0, 3)
+      .map((species, index) => ({
+        id: `additional-${species.id}-${index}`,
+        name: species.name,
+        confidence: null,
+      }))
+    if (!additionalCandidates.length) {
+      setHint('더 추천할 후보가 없어요. 사진을 다시 올려보세요.')
+      setStatus('lowConfidence')
+      return
+    }
+    setCandidates((current) => [...current, ...additionalCandidates])
+    setCandidatePage((page) => page + 1)
   }
 
   async function handleUpload(method) {
@@ -193,6 +232,7 @@ export default function Exploration() {
         const resultCandidates = data.predictions?.map((c) => ({ id: c.insect_id, name: c.ko_name, confidence: c.confidence })) ?? data.candidates
         if (resultCandidates?.length) {
           setCandidates(resultCandidates.map((c, i) => ({ id: `${c.id ?? c.name}-${i}`, name: c.name ?? c.ko_name, confidence: c.confidence })))
+          setCandidatePage(0)
           setStatus('candidates')
         } else {
           setHint(HINTS[Math.floor(Math.random() * HINTS.length)])
@@ -213,6 +253,7 @@ export default function Exploration() {
           { id: 'stag-beetle', name: '사슴벌레', confidence: 92 },
           { id: 'wide-stag-beetle', name: '넓적사슴벌레', confidence: 61 },
         ])
+        setCandidatePage(0)
         setStatus('candidates')
       } else {
         setHint(HINTS[Math.floor(Math.random() * HINTS.length)])
@@ -224,6 +265,7 @@ export default function Exploration() {
 
   function handleTraceDrawingComplete(dataUrl) {
     if (tracedSpecies) registerSilverSketch(tracedSpecies.id, dataUrl)
+    playSfx(SFX.registerSilver)
     reportMissionEvent({ type: 'exploration_complete' })
     setRegisteredName(tracedSpecies?.name ?? '')
     setRegisteredSpeciesId(tracedSpecies?.id ?? null)
@@ -232,12 +274,21 @@ export default function Exploration() {
 
   async function confirmCandidate(candidate) {
     const species = INSECT_SPECIES.find((s) => s.name === candidate.name)
+    // showMoreCandidates()가 채워 넣는 추가 후보는 getInsectSpecies(데모 계정 포함)에서 뽑히므로,
+    // 일반 계정 도감(INSECT_SPECIES)에는 없는 데모 전용 종일 수 있다 — 이 경우를 안내한다.
+    if (!species) {
+      setHint('아직 우리 도감에 등록되지 않은 생물이에요. 다른 후보를 골라보거나 사진을 다시 올려보세요.')
+      setStatus('lowConfidence')
+      return
+    }
     if (species && photoFile) {
       const dataUrl = await readFileAsDataUrl(photoFile.file)
       registerGoldPhoto(species.id, dataUrl)
+      playSfx(SFX.registerGold)
     } else if (species && drawingFile) {
       const dataUrl = await readFileAsDataUrl(drawingFile.file)
       registerSilverSketch(species.id, dataUrl)
+      playSfx(SFX.registerSilver)
     }
     reportMissionEvent({ type: 'exploration_complete' })
     setRegisteredName(candidate.name)
@@ -246,8 +297,14 @@ export default function Exploration() {
   }
 
   return (
-    <FocusedLayout title="탐험" icon="🧭">
-      <p className="mb-4 text-sm text-ink-700/80">우리 동네를 탐험하고 다양한 생물들을 발견해보세요!</p>
+    <FocusedLayout>
+      <NaturePage>
+        <NatureSectionTitle
+          iconSrc="/ui/explore.png"
+          title="탐험"
+          description="우리 동네를 탐험하고 다양한 생물들을 발견해보세요!"
+          aside={<span className="flex items-center gap-1"><Leaf size={16} /> 생태 관찰 노트</span>}
+        />
 
       {status === 'idle' && (
         <div className="flex flex-col gap-5">
@@ -256,18 +313,22 @@ export default function Exploration() {
             <button
               type="button"
               onClick={() => setStatus('photoUpload')}
-              className="flex flex-col items-center gap-2 rounded-xl border border-ivory-200 bg-white p-6 text-center shadow-card hover:shadow-soft"
+              className="nature-card flex flex-col items-center gap-2 text-center hover:shadow-soft"
             >
-              <span className="text-3xl" aria-hidden="true">📷</span>
+              <span className="exploration-action-logo" aria-hidden="true">
+                <Camera size={32} />
+              </span>
               <span className="font-semibold text-ink-900">사진으로 기록하기</span>
               <span className="text-xs text-ink-700/70">카메라로 찍은 사진으로 생물을 알아봐요</span>
             </button>
             <button
               type="button"
               onClick={() => setStatus('drawingChoice')}
-              className="flex flex-col items-center gap-2 rounded-xl border border-ivory-200 bg-white p-6 text-center shadow-card hover:shadow-soft"
+              className="nature-card flex flex-col items-center gap-2 text-center hover:shadow-soft"
             >
-              <span className="text-3xl" aria-hidden="true">🖍️</span>
+              <span className="exploration-action-logo" aria-hidden="true">
+                <PencilLine size={32} />
+              </span>
               <span className="font-semibold text-ink-900">그림으로 기록하기</span>
               <span className="text-xs text-ink-700/70">그림을 그려 나만의 관찰 노트를 완성해요</span>
             </button>
@@ -297,7 +358,9 @@ export default function Exploration() {
                 />
               ) : (
                 <>
-                  <span className="text-3xl" aria-hidden="true">🖼️</span>
+                  <span className="exploration-action-logo exploration-action-logo--plain" aria-hidden="true">
+                    <Camera size={34} />
+                  </span>
                   <span className="font-semibold text-ink-900">사진 파일을 선택해주세요</span>
                   <span className="text-xs text-ink-700/70">PNG 또는 JPG 파일만 올릴 수 있어요</span>
                 </>
@@ -346,7 +409,9 @@ export default function Exploration() {
                 />
               ) : (
                 <>
-                  <span className="text-3xl" aria-hidden="true">🖍️</span>
+                  <span className="exploration-action-logo exploration-action-logo--plain" aria-hidden="true">
+                    <PencilLine size={34} />
+                  </span>
                   <span className="font-semibold text-ink-900">그린 그림 파일을 선택해주세요</span>
                   <span className="text-xs text-ink-700/70">PNG 또는 JPG 파일만 올릴 수 있어요</span>
                 </>
@@ -421,18 +486,22 @@ export default function Exploration() {
             <button
               type="button"
               onClick={() => setStatus('drawingUpload')}
-              className="flex flex-col items-center gap-2 rounded-xl border border-ivory-200 bg-white p-6 text-center shadow-card hover:shadow-soft"
+              className="nature-card flex flex-col items-center gap-2 text-center hover:shadow-soft"
             >
-              <span className="text-3xl" aria-hidden="true">✏️</span>
+              <span className="exploration-action-logo exploration-action-logo--plain" aria-hidden="true">
+                <PencilLine size={34} />
+              </span>
               <span className="font-semibold text-ink-900">직접 그리기</span>
               <span className="text-xs text-ink-700/70">빈 도화지에 자유롭게 그려요</span>
             </button>
             <button
               type="button"
               onClick={() => setStatus('traceSelect')}
-              className="flex flex-col items-center gap-2 rounded-xl border border-ivory-200 bg-white p-6 text-center shadow-card hover:shadow-soft"
+              className="nature-card flex flex-col items-center gap-2 text-center hover:shadow-soft"
             >
-              <span className="text-3xl" aria-hidden="true">🖼️</span>
+              <span className="exploration-action-logo exploration-action-logo--plain" aria-hidden="true">
+                <Camera size={34} />
+              </span>
               <span className="font-semibold text-ink-900">객체 지정해서 그리기</span>
               <span className="text-xs text-ink-700/70">생물을 고르고 따라 그리며 기록해요</span>
             </button>
@@ -531,7 +600,7 @@ export default function Exploration() {
         <div className="rounded-xl bg-white p-5 shadow-card">
           <p className="mb-3 font-semibold text-ink-900">이 생물이 맞을까요?</p>
           <ul className="flex flex-col gap-2">
-            {candidates.map((c) => (
+            {candidates.slice(candidatePage * 3, candidatePage * 3 + 3).map((c) => (
               <li key={c.id}>
                 <button
                   type="button"
@@ -539,11 +608,29 @@ export default function Exploration() {
                   className="flex w-full items-center justify-between rounded-xl border border-ivory-200 px-4 py-3 text-left hover:border-leaf-500"
                 >
                   <span className="font-medium text-ink-900">{c.name}</span>
-                  <span className="text-xs text-ink-700/70">일치율 {c.confidence}%</span>
+                  <span className="text-xs text-ink-700/70">
+                    {c.confidence == null ? '추가 후보' : `일치율 ${c.confidence}%`}
+                  </span>
                 </button>
               </li>
             ))}
           </ul>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={showMoreCandidates}
+              className="rounded-full bg-leaf-500 px-4 py-2 text-sm font-semibold text-white hover:bg-leaf-600"
+            >
+              이 중에는 없어요
+            </button>
+            <button
+              type="button"
+              onClick={goBackToPhotoUpload}
+              className="rounded-full bg-ivory-100 px-4 py-2 text-sm font-semibold text-ink-900 hover:bg-ivory-200"
+            >
+              사진 다시 올리기
+            </button>
+          </div>
           <p className="mt-3 text-xs text-ink-700/60">
             신뢰도 70% 미만 후보는 확정 등록되지 않아요. 확실한 후보를 골라주세요.
           </p>
@@ -560,11 +647,13 @@ export default function Exploration() {
 
       <ResultModal
         open={status === 'success'}
+        imageSrc="/ui/field-guide-success.png"
         title="도감에 등록했어요!"
         description={registeredName ? `${registeredName} 카드가 도감에 추가됐어요.` : '새로운 카드가 도감에 추가됐어요.'}
         confirmLabel="도감에서 확인하기"
         onConfirm={() => navigate('/field-guide', { state: { selectedSpeciesId: registeredSpeciesId } })}
       />
+      </NaturePage>
     </FocusedLayout>
   )
 }

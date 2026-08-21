@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useState } from 'react'
 import { mockQuests, mockFriends } from '../data/mockData'
 import { INSECT_SPECIES } from '../data/insectSpecies'
 import { createDailyMissions, getLocalDateKey, DAILY_MISSION_COUNT } from '../data/dailyMissions'
-import { createWeeklyMissions, getWeekKey, isCollectionComplete } from '../data/weeklyMissions'
+import { createWeeklyMissions, getWeekKey, isCollectionComplete, WEEKLY_MISSION_COUNT } from '../data/weeklyMissions'
 import { ACHIEVEMENT_MISSIONS, INITIAL_ACHIEVEMENT_COUNTERS } from '../data/achievementMissions'
 import { TITLE_MISSIONS } from '../data/titles'
 import {
@@ -30,11 +30,14 @@ const ADULT_HISTORY_KEY = 'representativeAdultHistory'
 const PROFILE_CHARACTER_KEY = 'profileCharacterId'
 const MISSION_GROUP_KEYS = ['daily', 'weekly', 'achievement']
 const MISSION_GROWTH_REWARD = 10
-const RANDOM_ACHIEVEMENT_COUNT = 12
-const RANDOM_TITLE_COUNT = 12
+// 예전엔 정적 목록이 너무 길다고(수십 개) 계정마다 12개만 무작위로 골라 보여줬는데, 그러면
+// "achievementCount"(완료한 업적 수)를 요구하는 칭호가 표시된 12개 안에서만 세어져서 15개·30개를
+// 요구하는 상위 칭호가 영원히 달성 불가능해지는 문제가 있었다. 이제 전체를 다 보여준다.
+const RANDOM_ACHIEVEMENT_COUNT = ACHIEVEMENT_MISSIONS.length
+const RANDOM_TITLE_COUNT = TITLE_MISSIONS.length
 
-// 업적·칭호 미션은 정적 목록이 너무 길어서(수십 개) 계정마다 무작위로 12개만 골라 보여준다 —
-// 한 번 고르면 서버에 저장해 계속 같은 목록을 쓰고, 매번 다시 뽑지 않는다.
+// 뽑을 개수가 전체 목록 길이와 같으면 사실상 전체를 순서만 섞어서 보여주는 셈이다 — 한 번 고르면
+// 서버에 저장해 계속 같은 순서를 쓰고, 매번 다시 섞지 않는다.
 function pickRandomMissionIds(missions, count) {
   return [...missions]
     .sort(() => Math.random() - 0.5)
@@ -50,7 +53,7 @@ function resolveDaily(saved) {
 
 function resolveWeekly(saved) {
   const week = getWeekKey()
-  if (saved?.week === week && Array.isArray(saved.missions)) return saved
+  if (saved?.week === week && Array.isArray(saved.missions) && saved.missions.length === WEEKLY_MISSION_COUNT) return saved
   const excludedIds = new Set(saved?.permanentExcludedIds ?? [])
   if (isCollectionComplete()) excludedIds.add('weekly-guide-register')
   const currentPermanent = saved?.missions?.filter((mission) => mission.permanent).map((mission) => mission.id) ?? []
@@ -61,7 +64,7 @@ function resolveAchievementProgress(saved) {
   const next = { ...INITIAL_ACHIEVEMENT_COUNTERS, claimedIds: [], ...(saved || {}) }
   return {
     ...next,
-    missionIds: Array.isArray(next.missionIds) && next.missionIds.length
+    missionIds: Array.isArray(next.missionIds) && next.missionIds.length === RANDOM_ACHIEVEMENT_COUNT
       ? next.missionIds
       : pickRandomMissionIds(ACHIEVEMENT_MISSIONS, RANDOM_ACHIEVEMENT_COUNT),
   }
@@ -72,7 +75,7 @@ function resolveTitleClaims(saved) {
 }
 
 function resolveTitleMissionIds(saved) {
-  return Array.isArray(saved) && saved.length
+  return Array.isArray(saved) && saved.length === RANDOM_TITLE_COUNT
     ? saved
     : pickRandomMissionIds(TITLE_MISSIONS, RANDOM_TITLE_COUNT)
 }
@@ -157,18 +160,18 @@ export function QuestsProvider({ children }) {
       }
       const storedWeekly = resolveWeekly(state[WEEKLY_KEY])
       setWeekly(storedWeekly)
-      if (!Array.isArray(state[WEEKLY_KEY]?.missions)) {
+      if (!Array.isArray(state[WEEKLY_KEY]?.missions) || state[WEEKLY_KEY].missions.length !== WEEKLY_MISSION_COUNT) {
         saveUserState(user.uid, WEEKLY_KEY, storedWeekly)
       }
       const storedAchievementProgress = resolveAchievementProgress(state[ACHIEVEMENT_KEY])
       setAchievementProgress(storedAchievementProgress)
-      if (!Array.isArray(state[ACHIEVEMENT_KEY]?.missionIds) || !state[ACHIEVEMENT_KEY].missionIds.length) {
+      if (state[ACHIEVEMENT_KEY]?.missionIds?.length !== RANDOM_ACHIEVEMENT_COUNT) {
         saveUserState(user.uid, ACHIEVEMENT_KEY, storedAchievementProgress)
       }
       setTitleClaimedIds(resolveTitleClaims(state[TITLE_KEY]))
       const storedTitleMissionIds = resolveTitleMissionIds(state[TITLE_MISSION_IDS_KEY])
       setTitleMissionIds(storedTitleMissionIds)
-      if (!Array.isArray(state[TITLE_MISSION_IDS_KEY]) || !state[TITLE_MISSION_IDS_KEY].length) {
+      if (state[TITLE_MISSION_IDS_KEY]?.length !== RANDOM_TITLE_COUNT) {
         saveUserState(user.uid, TITLE_MISSION_IDS_KEY, storedTitleMissionIds)
       }
       const storedCharacter = normalizeRepresentativeCharacter(state[REPRESENTATIVE_CHARACTER_KEY])
@@ -417,6 +420,12 @@ export function QuestsProvider({ children }) {
         selectProfileCharacter,
         featuredCharacterImage,
         missionGrowthReward: MISSION_GROWTH_REWARD,
+        // Profile.jsx가 자기 자신의 fetchUserState(장착 배지/칭호)와 이 컨텍스트의 fetchUserState
+        // (업적/칭호 달성 여부, quests.title/achievement의 근거)를 각각 따로 불러오는데, 두 요청의
+        // 완료 순서가 보장되지 않는다 — 이 값이 아직 false인 동안 quests.title/achievement로
+        // "보유 여부"를 걸러내면 아직 하나도 안 딴 것처럼 보여서, 장착 목록을 빈 배열로 잘못
+        // 저장해버리는 사고가 난다(그 계정이 만든 실제 버그: 대표 칭호가 초기화되는 것처럼 보임).
+        isLoaded,
       }}
     >
       {children}

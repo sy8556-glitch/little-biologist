@@ -114,21 +114,32 @@ export function primeSfxList(srcList) {
   }
 }
 
-// 브라우저 자동재생 정책·미지원 환경에서도 화면 흐름이 끊기지 않도록, 재생 실패는 조용히 무시한다.
+function playAudioInstance(audio, src, volume) {
+  // 아직 메타데이터가 로드되지 않은 인스턴스에서는 currentTime 리셋이 예외를 던질 수 있는데,
+  // 그것 때문에 재생 자체(아래 play())까지 막히면 안 돼서 따로 감싼다.
+  try {
+    audio.currentTime = 0
+  } catch {
+    // no-op
+  }
+  audio.volume = Math.min(1, Math.max(0, volume * (readSfxVolume() / 100) * SFX_VOLUME_MULTIPLIER))
+  const playResult = audio.play()
+  if (!playResult) return
+  playResult.catch(() => {
+    // 재사용 중이던 풀 인스턴스가 직전 재생과 겹치거나(AbortError) 아직 버퍼링 중이라(readyState
+    // 부족) play()가 거부되면, 소리가 아예 안 나는 대신 완전히 새 인스턴스로 한 번 더 시도한다 —
+    // "퀴즈 정답/오답 사운드가 가끔 안 들린다"는 신고가 바로 이 조용한 실패 때문이었다.
+    playAudioInstance(createAudio(src), src, volume)
+  })
+}
+
+// 브라우저 자동재생 정책·미지원 환경에서도 화면 흐름이 끊기지 않도록, 재시도까지 실패하면 조용히 무시한다.
 export function playSfx(src, { volume = 1 } = {}) {
   try {
     const pool = getAudioPool(src)
     const audio = pool.shift() ?? createAudio(src)
     pool.push(audio)
-    // 아직 메타데이터가 로드되지 않은 인스턴스에서는 currentTime 리셋이 예외를 던질 수 있는데,
-    // 그것 때문에 재생 자체(아래 play())까지 막히면 안 돼서 따로 감싼다.
-    try {
-      audio.currentTime = 0
-    } catch {
-      // no-op
-    }
-    audio.volume = Math.min(1, Math.max(0, volume * (readSfxVolume() / 100) * SFX_VOLUME_MULTIPLIER))
-    audio.play()?.catch(() => {})
+    playAudioInstance(audio, src, volume)
   } catch {
     // no-op
   }

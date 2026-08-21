@@ -682,7 +682,9 @@ body {
   z-index: 55;
   display: grid;
   place-items: center;
-  pointer-events: none;
+  /* 등장 연출이 떠 있는 동안 뒤에 있는 목장 UI(하단 내비 등)가 눌리지 않도록 막는다 —
+     none이면 사진이 로드되는 동안이나 페이드 중에도 클릭이 그대로 통과해 다른 화면으로 이동돼버린다. */
+  pointer-events: auto;
   background: rgba(20, 24, 14, 0);
   transition: background 0.7s ease;
 }
@@ -1415,14 +1417,10 @@ body {
   transform: none !important;
 }
 
-.ranch-top-icon-button[aria-label="알림"] img {
-  mix-blend-mode: screen;
-}
-
 /* User image assets, oversized icon-only HUD. */
 .ranch-hud-button {
-  width: clamp(6.8rem, 10.7vw, 8.9rem) !important;
-  min-height: clamp(6.45rem, 10.1vw, 8.35rem) !important;
+  width: clamp(4.76rem, 7.49vw, 6.23rem) !important;
+  min-height: clamp(4.52rem, 7.07vw, 5.85rem) !important;
   background: transparent !important;
   border: 0 !important;
   box-shadow: none !important;
@@ -1437,8 +1435,8 @@ body {
 }
 
 .ranch-hud-icon > img {
-  width: clamp(5.75rem, 9.3vw, 7.55rem) !important;
-  height: clamp(5.45rem, 8.95vw, 7.15rem) !important;
+  width: clamp(4.03rem, 6.51vw, 5.29rem) !important;
+  height: clamp(3.82rem, 6.27vw, 5.01rem) !important;
   object-fit: contain !important;
   object-position: center !important;
 }
@@ -1729,8 +1727,8 @@ body {
 }
 
 .ranch-top-icon-button img {
-  width: 4.55rem !important;
-  height: 4.55rem !important;
+  width: 72.8px !important;
+  height: 72.8px !important;
   object-fit: contain !important;
   object-position: center !important;
   transform: none !important;
@@ -2028,4 +2026,3420 @@ body {
   50% {
     transform: translateY(-0.55rem) scale(1.06);
   }
+}
+
+/* ============================================================
+   UI_MERGED_FILES_20260812.zip 자연 테마 UI 이식 (2026-08-12)
+   기존 클래스는 그대로 두고, 새 UI가 참조하는 클래스만 아래에 추가한다.
+   ============================================================ */
+
+/* ---- NatureUI 공용 컴포넌트 (Bag/Exploration/FieldGuide 등 여러 페이지가 공유) ---- */
+.nature-page {
+  --nature-bg: #fff9ec;
+  --nature-bg-2: #f7f1df;
+  --nature-panel: #fffdf7;
+  --nature-line: #e7d7af;
+  --nature-ink: #30271f;
+  --nature-muted: rgba(58, 43, 31, 0.68);
+  --nature-green: #5a9f4b;
+  --nature-green-dark: #4f8433;
+  --nature-olive: #729b35;
+  --nature-sprout: #a9cb67;
+  --nature-disabled: #f6f0e3;
+  --nature-shadow: 0 12px 26px rgba(102, 74, 35, 0.11), 0 2px 5px rgba(102, 74, 35, 0.08);
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(231, 215, 175, 0.92);
+  border-radius: 28px;
+  background:
+    radial-gradient(circle at top right, rgba(169, 203, 103, 0.18), transparent 24%),
+    linear-gradient(135deg, var(--nature-bg), var(--nature-bg-2));
+  box-shadow: var(--nature-shadow);
+  color: var(--nature-ink);
+  padding: clamp(18px, 3vw, 30px);
+}
+
+.nature-page::before {
+  content: '';
+  position: absolute;
+  inset: 10px;
+  pointer-events: none;
+  border: 1px dashed rgba(210, 174, 104, 0.48);
+  border-radius: 22px;
+}
+
+.nature-deco {
+  position: absolute;
+  pointer-events: none;
+  width: 120px;
+  height: 120px;
+  opacity: 0.22;
+  background:
+    radial-gradient(ellipse at 30% 25%, #8fb856 0 18%, transparent 19%),
+    radial-gradient(ellipse at 58% 20%, #a9cb67 0 19%, transparent 20%),
+    radial-gradient(ellipse at 72% 48%, #7fa64a 0 18%, transparent 19%);
+}
+
+.nature-deco--top {
+  right: -18px;
+  top: -24px;
+  transform: rotate(-18deg);
+}
+
+.nature-deco--bottom {
+  bottom: -32px;
+  left: -24px;
+  transform: rotate(160deg);
+}
+
+.nature-section-title {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 22px;
+}
+
+.nature-title-icon {
+  display: inline-grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  border-radius: 16px;
+  border: 1px solid rgba(231, 215, 175, 0.9);
+  background: linear-gradient(180deg, #fff7db, #f2e0ab);
+  color: var(--nature-green-dark);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 3px 8px rgba(102, 74, 35, 0.12);
+}
+
+.nature-title-aside {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--nature-green-dark);
+  font-size: 0.875rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.nature-panel,
+.nature-card {
+  position: relative;
+  z-index: 1;
+  border: 1px solid var(--nature-line);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.64), rgba(255, 250, 237, 0.64)),
+    var(--nature-panel);
+  box-shadow: var(--nature-shadow);
+}
+
+.nature-panel {
+  border-radius: 26px;
+  padding: clamp(16px, 2.4vw, 24px);
+}
+
+.nature-card {
+  border-radius: 22px;
+  padding: 18px;
+}
+
+.nature-tab,
+.nature-button {
+  border: 1px solid var(--nature-line);
+  border-radius: 999px;
+  background: var(--nature-disabled);
+  color: var(--nature-ink);
+  box-shadow: 0 4px 10px rgba(102, 74, 35, 0.08);
+  font-weight: 850;
+  transition: transform 150ms ease, background-color 150ms ease, box-shadow 150ms ease, border-color 150ms ease;
+}
+
+.nature-tab {
+  min-height: 42px;
+  padding: 0.58rem 1.35rem;
+  font-size: 0.95rem;
+}
+
+.nature-tab:hover,
+.nature-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 7px 15px rgba(102, 74, 35, 0.12);
+}
+
+.nature-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.nature-tab--active,
+.nature-button--primary {
+  border-color: #456f2f;
+  background: linear-gradient(180deg, var(--nature-green), var(--nature-olive));
+  color: white;
+}
+
+.nature-button {
+  min-height: 44px;
+  padding: 0.72rem 1.15rem;
+}
+
+.nature-button--secondary {
+  background: #fff7e6;
+  color: var(--nature-ink);
+}
+
+.nature-input {
+  border: 1px solid var(--nature-line);
+  border-radius: 999px;
+  background: rgba(255, 253, 247, 0.94);
+  color: var(--nature-ink);
+  box-shadow: inset 0 1px 3px rgba(102, 74, 35, 0.08);
+}
+
+.nature-empty {
+  display: grid;
+  min-height: 172px;
+  place-items: center;
+  border: 1px dashed rgba(210, 174, 104, 0.58);
+  border-radius: 22px;
+  background: rgba(255, 253, 247, 0.76);
+  text-align: center;
+}
+
+.nature-choice {
+  border: 1px solid var(--nature-line);
+  border-radius: 18px;
+  background: rgba(255, 253, 247, 0.94);
+  box-shadow: 0 4px 12px rgba(102, 74, 35, 0.07);
+}
+
+.nature-choice:hover {
+  background: #fff9ec;
+  border-color: rgba(169, 203, 103, 0.9);
+}
+
+.nature-choice--selected {
+  border-color: var(--nature-green);
+  background: #eef8e3;
+}
+
+/* 정답 제출 전, 아직 채점되지 않은 선택 표시 — 맞음(초록)/틀림(빨강)과 헷갈리지 않게 중립 강조색을 쓴다. */
+.nature-choice--picked {
+  border-color: #d9a441;
+  background: #fff6e0;
+  box-shadow: 0 0 0 2px rgba(217, 164, 65, 0.28);
+}
+
+.nature-choice--wrong {
+  border-color: #e49a87;
+  background: #fff0ed;
+}
+
+.nature-map-frame {
+  overflow: hidden;
+  border: 1px solid rgba(231, 215, 175, 0.95);
+  border-radius: 24px;
+  background: #fffdf7;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.64), 0 6px 18px rgba(102, 74, 35, 0.1);
+}
+
+.exploration-action-logo {
+  display: grid;
+  width: 58px;
+  height: 58px;
+  place-items: center;
+  border-radius: 20px;
+  border: 1px solid rgba(231, 215, 175, 0.9);
+  background: linear-gradient(180deg, #fff7db, #f2e0ab);
+  color: #5a9f4b;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 5px 12px rgba(102, 74, 35, 0.1);
+}
+
+.exploration-action-logo--plain {
+  width: 64px;
+  height: 64px;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.profile-representative-title + p {
+  display: none;
+}
+
+/* ---- 이하 zip(UI_MERGED_FILES_20260812) index.css 나머지 전체를 그대로 이어붙임 ----
+   기존에 있던 선택자(.ranch-profile-card, .ranch-egg-help__face, .insect-card 등)는 위에서
+   이미 선언돼 있으므로 여기 재선언된 부분이 CSS 캐스케이드로 자연스럽게 최신값을 덮어쓴다.
+   삭제된 규칙은 없음 — 새 파일 쪽 신규/변경분만 뒤에 추가되는 구조. ---- */
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  @apply bg-ivory-100 text-ink-900;
+}
+
+.insect-card {
+  position: relative;
+  border: 2px solid #f1ead6;
+  background: #fff;
+}
+
+.insect-card--bronze {
+  border-color: transparent;
+}
+
+.insect-card--gold,
+.insect-card--silver {
+  /* 반짝이는 ::after 스윕이 카드 밖으로 새지 않도록 이 두 등급에만 overflow:hidden을 건다 —
+     전체에 걸면 도감 튜토리얼 포인터(카드 위로 튀어나오는 화살표)가 잘려 보인다. */
+  overflow: hidden;
+  border: 4px solid transparent;
+  padding: 0.5rem;
+  isolation: isolate;
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+}
+
+.insect-card--gold::after,
+.insect-card--silver::after {
+  content: "";
+  position: absolute;
+  inset: -45%;
+  z-index: 0;
+  opacity: 0.62;
+  pointer-events: none;
+  transform: translateX(-42%) rotate(18deg);
+  animation: insectCardShine 3.4s ease-in-out infinite;
+}
+
+.insect-card--gold {
+  background:
+    linear-gradient(#fff, #fff) padding-box,
+    conic-gradient(from 145deg, #9a6718, #fff3a6, #d59a22, #7f4c0c, #ffe89a, #b77814) border-box;
+  box-shadow: 0 6px 18px rgba(177, 119, 20, 0.26), inset 0 0 0 1px rgba(255, 244, 178, 0.65);
+}
+
+.insect-card--silver {
+  background:
+    linear-gradient(#fff, #fff) padding-box,
+    conic-gradient(from 145deg, #7e8792, #f8fbff, #bac3cc, #6e7781, #ffffff, #9ea8b2) border-box;
+  box-shadow: 0 6px 18px rgba(95, 111, 128, 0.24), inset 0 0 0 1px rgba(255, 255, 255, 0.78);
+}
+
+.insect-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+.insect-card--gold::after {
+  background: linear-gradient(90deg, transparent 42%, rgba(255, 255, 255, 0.82) 50%, transparent 58%);
+}
+
+.insect-card--silver::after {
+  background: linear-gradient(90deg, transparent 42%, rgba(255, 255, 255, 0.72) 50%, transparent 58%);
+}
+
+.insect-card--gold:hover,
+.insect-card--silver:hover {
+  filter: saturate(1.05) brightness(1.02);
+}
+
+@keyframes insectCardShine {
+  0%, 45% {
+    transform: translateX(-42%) rotate(18deg);
+  }
+  72%, 100% {
+    transform: translateX(42%) rotate(18deg);
+  }
+}
+
+.field-guide-layout {
+  display: grid;
+  grid-template-columns: minmax(15rem, 1fr) minmax(17rem, 21.5rem);
+}
+
+.field-guide-detail {
+  overflow: hidden;
+}
+
+@media (max-width: 760px) and (orientation: landscape) {
+  .field-guide-layout {
+    height: calc(100vh - 11rem) !important;
+    min-height: 0 !important;
+    grid-template-columns: minmax(12.5rem, 1fr) minmax(15.5rem, 18rem);
+    gap: 0.75rem !important;
+  }
+
+  .field-guide-card-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 0.55rem !important;
+  }
+
+  .field-guide-detail > div {
+    padding: 0.75rem !important;
+  }
+
+  .field-guide-detail img {
+    height: 9.5rem !important;
+  }
+}
+
+/* 접근성: 키보드 포커스 표시 (design-guidelines.md §5) */
+:focus-visible {
+  outline: 3px solid theme('colors.leaf.500');
+  outline-offset: 2px;
+}
+
+/* 모션 감소 설정 고려 (design-guidelines.md §5) */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+.ranch-side-hud {
+  position: absolute;
+  left: 50%;
+  bottom: clamp(0.25rem, 0.8vw, 0.6rem);
+  z-index: 30;
+  display: flex;
+  width: min(58rem, calc(100vw - 8rem));
+  transform: translateX(-50%);
+  align-items: stretch;
+  justify-content: center;
+  flex-direction: row;
+  gap: 0.45rem;
+  border: 2px solid rgba(255, 255, 255, 0.42);
+  border-radius: 1.3rem;
+  background: rgba(255, 248, 235, 0.9);
+  padding: 0.42rem;
+  box-shadow: 0 7px 0 rgba(111, 76, 38, 0.22), 0 16px 36px rgba(25, 40, 16, 0.32);
+  backdrop-filter: blur(10px);
+}
+
+.ranch-hud-button {
+  display: flex;
+  width: clamp(4.1rem, 8.4vw, 5.7rem);
+  min-height: clamp(4.1rem, 7.2vw, 5.2rem);
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 0.2rem;
+  border: 0;
+  border-right: 1px solid rgba(111, 76, 38, 0.16);
+  border-radius: 0.75rem;
+  background: transparent;
+  box-shadow: none;
+  color: #2a2620;
+  font-size: clamp(1.45rem, 3vw, 2rem);
+  line-height: 1;
+  transition: transform 160ms ease, filter 160ms ease, box-shadow 160ms ease;
+}
+
+.ranch-hud-button:hover,
+.ranch-hud-button:focus-visible {
+  transform: translateY(-3px) scale(1.04);
+  filter: brightness(1.05);
+  background: rgba(255, 255, 255, 0.48);
+  box-shadow: none;
+}
+
+.ranch-hud-button:active {
+  transform: translateY(2px) scale(0.98);
+  box-shadow: none;
+}
+
+.ranch-hud-icon span {
+  display: grid;
+  width: 2.55rem;
+  height: 2.55rem;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--ranch-icon-bg, #eef6ea);
+  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.14));
+}
+
+.ranch-hud-icon strong {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  color: #2a2620;
+  font-size: 0.72rem;
+  font-weight: 1000;
+  line-height: 1.1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ranch-hud-icon--exploration { --ranch-icon-bg: #e5f5d8; }
+.ranch-hud-icon--guide { --ranch-icon-bg: #e7f0ff; }
+.ranch-hud-icon--quests { --ranch-icon-bg: #eee6ff; }
+.ranch-hud-icon--friends { --ranch-icon-bg: #fff0c7; }
+.ranch-hud-icon--shop { --ranch-icon-bg: #ffe4d5; }
+.ranch-hud-icon--bag { --ranch-icon-bg: #dff7ef; }
+
+.ranch-hud-icon .ranch-sprite {
+  width: 3.35rem;
+  height: 3.15rem;
+  border-radius: 0;
+  background-color: transparent;
+  filter: drop-shadow(0 3px 2px rgba(0, 0, 0, 0.22));
+}
+
+.ranch-edit-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 3rem;
+  border: 2px solid rgba(255, 255, 255, 0.45);
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(244, 235, 211, 0.92));
+  padding: 0.65rem 1.05rem;
+  color: #2a2620;
+  font-size: 0.95rem;
+  font-weight: 900;
+  box-shadow: 0 5px 0 rgba(92, 64, 35, 0.26), 0 14px 28px rgba(20, 32, 14, 0.24);
+  transition: transform 160ms ease, filter 160ms ease;
+}
+
+.ranch-edit-button span {
+  display: grid;
+  width: 1.75rem;
+  height: 1.75rem;
+  place-items: center;
+  border-radius: 999px;
+  background: #5b9c4d;
+  color: white;
+  font-size: 1rem;
+}
+
+.ranch-edit-button__icon {
+  display: block;
+  width: 1.75rem;
+  height: 1.75rem;
+  flex: 0 0 auto;
+  object-fit: contain;
+  border-radius: 0;
+  background: transparent;
+}
+
+.ranch-edit-button:has(.ranch-action-button__image) {
+  min-height: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: 0;
+  box-shadow: none;
+  color: transparent;
+  overflow: visible;
+}
+
+.ranch-edit-button:has(.ranch-action-button__image):hover,
+.ranch-edit-button:has(.ranch-action-button__image):focus-visible {
+  background: transparent;
+  box-shadow: none;
+  filter: brightness(1.04);
+}
+
+.ranch-edit-button--active:has(.ranch-action-button__image) {
+  background: transparent;
+  color: transparent;
+}
+
+.ranch-action-button__image {
+  display: block;
+  width: 7rem;
+  height: auto;
+  object-fit: contain;
+  filter: none;
+}
+
+.ranch-action-button__image--edit {
+  width: 5.35rem;
+}
+
+.ranch-action-button__image--guestbook {
+  width: 7.05rem;
+}
+
+.ranch-guestbook-modal-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  margin: -0.35rem auto 1.1rem;
+  flex-wrap: wrap;
+}
+
+.ranch-guestbook-modal-owner {
+  color: #3a2b1f;
+  font-size: clamp(1.1rem, 3vw, 1.8rem);
+  font-weight: 1000;
+  line-height: 1;
+  text-shadow: 0 2px 0 rgba(255, 255, 255, 0.75);
+  white-space: nowrap;
+}
+
+.ranch-guestbook-modal-logo img {
+  display: block;
+  width: min(17rem, 58vw);
+  height: auto;
+  max-height: 5.8rem;
+  object-fit: contain;
+  filter: none;
+}
+
+.ranch-edit-button--active {
+  background: linear-gradient(180deg, #6fb35f, #487d3d);
+  color: white;
+}
+
+.ranch-edit-button--active span {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.ranch-edit-complete-button {
+  position: absolute;
+  right: 1rem;
+  top: 8rem;
+  z-index: 55;
+  border: 2px solid rgba(255, 255, 255, 0.72);
+  border-radius: 999px;
+  background:
+    linear-gradient(180deg, #c9e88a, #92c95d),
+    #a9cb67;
+  padding: 0.72rem 1.05rem;
+  color: #24451f;
+  font-size: 0.98rem;
+  font-weight: 1000;
+  letter-spacing: 0;
+  box-shadow:
+    0 4px 0 rgba(103, 78, 36, 0.22),
+    0 12px 24px rgba(28, 45, 20, 0.22);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.85);
+  transition: transform 160ms ease, filter 160ms ease, box-shadow 160ms ease;
+}
+
+.ranch-edit-complete-button::before {
+  content: "";
+  display: inline-block;
+  width: 0.78rem;
+  height: 0.78rem;
+  margin-right: 0.45rem;
+  border-radius: 999px 0 999px 0;
+  background: linear-gradient(135deg, #9bcf54, #4f963f);
+  transform: rotate(-18deg);
+  vertical-align: -0.05rem;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.48);
+}
+
+.ranch-edit-complete-button:hover,
+.ranch-edit-complete-button:focus-visible {
+  transform: translateY(-2px);
+  filter: brightness(1.04);
+  box-shadow:
+    0 5px 0 rgba(103, 78, 36, 0.22),
+    0 16px 28px rgba(28, 45, 20, 0.26);
+}
+
+.ranch-edit-complete-button:active {
+  transform: translateY(2px);
+  box-shadow:
+    0 2px 0 rgba(103, 78, 36, 0.22),
+    0 8px 16px rgba(28, 45, 20, 0.2);
+}
+
+.ranch-profile-cluster {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.ranch-profile-card {
+  display: inline-flex;
+  width: min(18.2rem, 58vw);
+  align-items: center;
+  gap: 0.65rem;
+  border: 2px solid rgba(42, 38, 32, 0.22);
+  border-radius: 0.85rem;
+  background: rgba(255, 250, 236, 0.92);
+  padding: 0.45rem 0.65rem 0.45rem 0.5rem;
+  box-shadow: 0 6px 14px rgba(24, 38, 16, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(8px);
+  transition: transform 160ms ease, filter 160ms ease;
+}
+
+.ranch-profile-card:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.04);
+}
+
+.ranch-profile-avatar {
+  display: block;
+  width: 3.25rem;
+  height: 3.25rem;
+  flex: 0 0 auto;
+  border-radius: 0.65rem;
+  background:
+    radial-gradient(circle at 50% 33%, #f5c38b 0 14%, transparent 15%),
+    radial-gradient(circle at 42% 31%, #2d241d 0 4%, transparent 5%),
+    radial-gradient(circle at 58% 31%, #2d241d 0 4%, transparent 5%),
+    linear-gradient(115deg, transparent 0 28%, #79512c 29% 35%, transparent 36%),
+    radial-gradient(ellipse at 50% 24%, #c6954f 0 28%, #7a4f25 29% 37%, transparent 38%),
+    linear-gradient(#5aa860 0 0);
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.42), 0 3px 8px rgba(44, 82, 32, 0.22);
+}
+
+.ranch-top-tools {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.ranch-currency-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 2.45rem;
+  border: 2px solid rgba(42, 38, 32, 0.16);
+  border-radius: 999px;
+  background: rgba(255, 250, 236, 0.92);
+  padding: 0.35rem 0.55rem 0.35rem 0.75rem;
+  color: #2a2620;
+  font-size: 0.9rem;
+  font-weight: 900;
+  box-shadow: 0 6px 14px rgba(24, 38, 16, 0.18), inset 0 -1px 0 rgba(70, 49, 22, 0.08);
+}
+
+.ranch-currency-plus {
+  display: grid;
+  width: 1.35rem;
+  height: 1.35rem;
+  place-items: center;
+  border-radius: 999px;
+  background: #5b9c4d;
+  color: white;
+  font-size: 0.9rem;
+  line-height: 1;
+}
+
+.ranch-weather-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  padding-left: 0;
+  transform: translateX(0);
+  transition: transform 0.32s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.ranch-weather-toggle {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  z-index: 3;
+  display: grid;
+  width: 1.75rem;
+  height: 100%;
+  place-items: center;
+  border: 0;
+  border-right: 1px solid rgba(120, 150, 185, 0.2);
+  border-radius: 999px 0 0 999px;
+  background: rgba(255, 255, 255, 0.34);
+  box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.45);
+  color: #52687c;
+  font-size: 0.9rem;
+  transform: translateY(-50%);
+  transition: background 0.18s ease, color 0.18s ease, transform 0.32s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.ranch-weather-toggle:hover {
+  background: rgba(255, 255, 255, 0.58);
+  color: #2f4659;
+}
+
+.ranch-weather-wrap--collapsed {
+  transform: translateX(calc(100% - 1.75rem));
+}
+
+.ranch-weather-wrap--collapsed .ranch-weather-panel {
+  opacity: 0;
+}
+
+.ranch-weather-wrap--collapsed .ranch-weather-pill {
+  pointer-events: none;
+}
+
+.ranch-weather-wrap--collapsed .ranch-weather-toggle {
+  transform: translateY(-50%) rotate(0deg);
+}
+
+.ranch-weather-panel {
+  overflow: hidden;
+  border-radius: 999px 1.15rem 1.15rem 999px;
+  opacity: 1;
+  transition: opacity 0.22s ease;
+}
+
+.ranch-weather-pill {
+  display: inline-flex;
+  width: min(12rem, 44vw);
+  min-height: 2.75rem;
+  align-items: center;
+  gap: 0.65rem;
+  border: 2px solid rgba(167, 211, 235, 0.38);
+  border-radius: 999px 1.15rem 1.15rem 999px;
+  background:
+    radial-gradient(circle at 16% 50%, rgba(255,255,255,0.98) 0 1.55rem, transparent 1.6rem),
+    radial-gradient(circle at 32% 32%, rgba(255,255,255,0.94) 0 1.35rem, transparent 1.4rem),
+    linear-gradient(135deg, rgba(245, 252, 255, 0.94), rgba(223, 241, 255, 0.86));
+  padding: 0.5rem 0.75rem 0.5rem 2.3rem;
+  box-shadow: 0 9px 22px rgba(48, 76, 99, 0.18), inset 0 2px 0 rgba(255, 255, 255, 0.86);
+  backdrop-filter: blur(10px);
+  transition: opacity 0.22s ease, transform 0.28s ease;
+}
+
+.ranch-weather-pill__icon {
+  display: grid;
+  width: 2.25rem;
+  height: 2.25rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 2px solid rgba(139, 103, 52, 0.16);
+  border-radius: 0.8rem;
+  background: rgba(255, 255, 255, 0.62);
+  box-shadow: 0 5px 12px rgba(72, 105, 130, 0.14), inset 0 2px 0 rgba(255, 255, 255, 0.75);
+  font-size: 1.25rem;
+}
+
+.ranch-weather-pill strong,
+.ranch-weather-pill span {
+  line-height: 1.1;
+}
+
+.ranch-weather-pill strong {
+  font-size: 0.82rem;
+  color: #2c1d11;
+}
+
+.ranch-weather-pill strong + span {
+  margin-top: 0.1rem;
+  font-size: 0.7rem;
+  color: rgba(78, 61, 38, 0.84);
+}
+
+.ranch-weather-overlay {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.ranch-weather-overlay--rain,
+.ranch-weather-overlay--storm {
+  background: linear-gradient(180deg, rgba(81, 111, 144, 0.1), rgba(21, 31, 40, 0.16));
+}
+
+.ranch-weather-overlay--snow {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(117, 148, 173, 0.1));
+}
+
+.ranch-weather-overlay--fog {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(209, 219, 225, 0.1));
+}
+
+.ranch-weather-overlay--cloudy {
+  background: linear-gradient(180deg, rgba(247, 251, 255, 0.1), rgba(224, 235, 243, 0.06));
+}
+
+.ranch-weather-drop,
+.ranch-weather-cloud,
+.ranch-weather-flake,
+.ranch-weather-fog,
+.ranch-weather-flash {
+  position: absolute;
+}
+
+.ranch-weather-drop {
+  top: -18%;
+  width: 1.75px;
+  height: 22px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0), rgba(220, 240, 255, 0.72));
+  animation: ranch-rain-fall linear infinite;
+  filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.12));
+}
+
+.ranch-weather-flake {
+  top: -10%;
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.22);
+  animation: ranch-snow-fall linear infinite;
+}
+
+.ranch-weather-cloud {
+  display: block;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  opacity: 0.82;
+  filter: drop-shadow(0 12px 26px rgba(86, 108, 130, 0.16));
+  pointer-events: none;
+  user-select: none;
+  will-change: transform, opacity;
+  animation: ranch-cloud-drift linear infinite;
+}
+
+.ranch-weather-cloud img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.ranch-weather-cloud--one {
+  left: -10%;
+  top: -3%;
+  width: min(32vw, 21rem);
+  animation-duration: 168s;
+  animation-delay: -24s;
+  --cloud-distance: 116vw;
+  --cloud-float: 10px;
+}
+
+.ranch-weather-cloud--two {
+  left: -18%;
+  top: 9%;
+  width: min(28vw, 18rem);
+  animation-duration: 214s;
+  animation-delay: -92s;
+  opacity: 0.68;
+  --cloud-distance: 124vw;
+  --cloud-float: -8px;
+}
+
+.ranch-weather-cloud--three {
+  left: -14%;
+  top: 20%;
+  width: min(24vw, 16rem);
+  animation-duration: 188s;
+  animation-delay: -138s;
+  opacity: 0.62;
+  --cloud-distance: 120vw;
+  --cloud-float: 14px;
+}
+
+.ranch-weather-cloud--four {
+  left: -22%;
+  top: 30%;
+  width: min(22vw, 14rem);
+  animation-duration: 246s;
+  animation-delay: -188s;
+  opacity: 0.52;
+  --cloud-distance: 128vw;
+  --cloud-float: -12px;
+}
+
+.ranch-weather-fog {
+  left: -15%;
+  right: -15%;
+  height: 16%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(245, 248, 250, 0.3), rgba(255, 255, 255, 0));
+  filter: blur(22px);
+  opacity: 0.78;
+  animation: ranch-fog-drift ease-in-out infinite alternate;
+}
+
+.ranch-weather-fog--one {
+  top: 18%;
+  animation-duration: 12s;
+}
+
+.ranch-weather-fog--two {
+  top: 44%;
+  animation-duration: 15s;
+}
+
+.ranch-weather-fog--three {
+  top: 68%;
+  animation-duration: 18s;
+}
+
+.ranch-weather-flash {
+  inset: 0;
+  background: radial-gradient(circle at 68% 18%, rgba(255, 249, 214, 0.3), transparent 34%);
+  animation: ranch-thunder-flash 7s linear infinite;
+}
+
+@keyframes ranch-rain-fall {
+  from {
+    transform: translate3d(0, -14vh, 0) rotate(12deg);
+  }
+  to {
+    transform: translate3d(0, 128vh, 0) rotate(12deg);
+  }
+}
+
+@keyframes ranch-snow-fall {
+  from {
+    transform: translate3d(0, -14vh, 0) translateX(calc(var(--drift, 0px) * -1));
+  }
+  to {
+    transform: translate3d(0, 128vh, 0) translateX(var(--drift, 0px));
+  }
+}
+
+@keyframes ranch-cloud-drift {
+  0% {
+    transform: translate3d(0, 0, 0);
+    opacity: 0;
+  }
+  10% {
+    opacity: var(--cloud-opacity, 0.82);
+  }
+  50% {
+    transform: translate3d(calc(var(--cloud-distance, 130vw) * 0.5), var(--cloud-float, 12px), 0);
+  }
+  90% {
+    opacity: var(--cloud-opacity, 0.82);
+  }
+  100% {
+    transform: translate3d(var(--cloud-distance, 130vw), 0, 0);
+    opacity: 0;
+  }
+}
+
+@keyframes ranch-fog-drift {
+  from {
+    transform: translateX(-8%);
+  }
+  to {
+    transform: translateX(8%);
+  }
+}
+
+@keyframes ranch-thunder-flash {
+  0%, 92%, 100% {
+    opacity: 0;
+  }
+  93% {
+    opacity: 0.38;
+  }
+  94% {
+    opacity: 0.08;
+  }
+  95% {
+    opacity: 0.45;
+  }
+}
+
+.ranch-random-insect-effect {
+  position: absolute;
+  z-index: 6;
+  width: min(260px, 17vw);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  transform: translate(-50%, -50%) scale(0.9);
+  transition: left 5s ease-in-out, top 5s ease-in-out;
+  animation: ranchRandomInsectPulse 2.4s ease-in-out infinite;
+}
+
+.ranch-random-insect-effect img {
+  display: block;
+  width: 100%;
+  height: auto;
+  /* 이미지 배경이 검은색이라 screen 블렌드로 검은 영역을 투명하게, 반짝이만 배경 위에 얹는다. */
+  mix-blend-mode: screen;
+  pointer-events: none;
+}
+
+@keyframes ranchRandomInsectPulse {
+  0%, 100% {
+    opacity: 0.6;
+    transform: translate(-50%, -50%) scale(0.85);
+  }
+  50% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.05);
+  }
+}
+
+.ranch-catch-reveal {
+  position: fixed;
+  inset: 0;
+  z-index: 55;
+  display: grid;
+  place-items: center;
+  /* 등장 연출이 떠 있는 동안 뒤에 있는 목장 UI(하단 내비 등)가 눌리지 않도록 막는다 —
+     none이면 사진이 로드되는 동안이나 페이드 중에도 클릭이 그대로 통과해 다른 화면으로 이동돼버린다. */
+  pointer-events: auto;
+  background: rgba(20, 24, 14, 0);
+  transition: background 0.7s ease;
+}
+
+.ranch-catch-reveal.is-visible {
+  background: rgba(20, 24, 14, 0.4);
+}
+
+.ranch-catch-reveal__image {
+  width: min(60vw, 420px);
+  max-height: 60vh;
+  object-fit: contain;
+  filter: drop-shadow(0 18px 40px rgba(0, 0, 0, 0.35));
+  opacity: 0;
+  transform: scale(0.85);
+  transition: opacity 0.7s ease, transform 0.7s ease;
+}
+
+.ranch-catch-reveal.is-visible .ranch-catch-reveal__image {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.result-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  background: rgba(21, 29, 14, 0.46);
+  padding: 1rem;
+  backdrop-filter: blur(4px);
+}
+
+.result-modal-card {
+  position: relative;
+  width: min(24rem, 92vw);
+  overflow: hidden;
+  border: 3px solid rgba(150, 103, 48, 0.52);
+  border-radius: 1.45rem;
+  background:
+    radial-gradient(circle at 12% 5%, rgba(183, 221, 99, 0.18), transparent 20%),
+    linear-gradient(180deg, #fffdf5, #f8efda);
+  padding: 1.35rem 1.3rem 1.25rem;
+  text-align: center;
+  box-shadow:
+    0 4px 0 rgba(104, 67, 29, 0.38),
+    0 24px 62px rgba(12, 21, 8, 0.35),
+    inset 0 0 0 3px rgba(255, 255, 255, 0.72);
+}
+
+.result-modal-card::before {
+  content: "";
+  position: absolute;
+  inset: 0.48rem;
+  pointer-events: none;
+  border: 1.5px dashed rgba(183, 149, 75, 0.36);
+  border-radius: 1.05rem;
+}
+
+.result-modal-card::after {
+  content: "";
+  position: absolute;
+  right: 0.7rem;
+  bottom: 0.62rem;
+  width: 4.5rem;
+  height: 2rem;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 16% 70%, #9fcf55 0 18%, transparent 19%),
+    radial-gradient(circle at 42% 56%, #75aa43 0 20%, transparent 21%),
+    radial-gradient(circle at 68% 72%, #b7d96a 0 17%, transparent 18%);
+  opacity: 0.34;
+}
+
+.result-modal-visual {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  width: 7rem;
+  height: 7rem;
+  margin: 0 auto;
+  place-items: center;
+  border: 2px solid rgba(205, 171, 92, 0.55);
+  border-radius: 1.15rem;
+  background:
+    radial-gradient(circle at 50% 46%, rgba(227, 246, 156, 0.82), rgba(255, 247, 205, 0.92) 62%, rgba(239, 224, 177, 0.92));
+  box-shadow:
+    inset 0 0 0 3px rgba(255, 255, 255, 0.68),
+    0 11px 20px rgba(88, 63, 28, 0.16);
+}
+
+.result-modal-visual img {
+  width: 86%;
+  height: 86%;
+  object-fit: contain;
+  filter: drop-shadow(0 5px 8px rgba(66, 52, 29, 0.18));
+}
+
+.result-modal-visual--image {
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+}
+
+.result-modal-visual--image img {
+  width: 108%;
+  height: 108%;
+}
+
+.result-modal-leaf-mark {
+  position: relative;
+  width: 3.4rem;
+  height: 3.4rem;
+}
+
+.result-modal-leaf-mark::before,
+.result-modal-leaf-mark::after {
+  content: "";
+  position: absolute;
+  border-radius: 100% 0;
+  background: linear-gradient(135deg, #c6e77d, #5a9f4b);
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.48);
+}
+
+.result-modal-leaf-mark::before {
+  left: 0.25rem;
+  top: 0.75rem;
+  width: 2rem;
+  height: 1.28rem;
+  transform: rotate(28deg);
+}
+
+.result-modal-leaf-mark::after {
+  right: 0.35rem;
+  top: 0.35rem;
+  width: 2.2rem;
+  height: 1.38rem;
+  transform: rotate(-34deg) scaleX(-1);
+}
+
+.result-modal-title {
+  position: relative;
+  z-index: 1;
+  margin-top: 1rem;
+  color: #30271f;
+  font-size: 1.25rem;
+  font-weight: 1000;
+  line-height: 1.35;
+}
+
+.result-modal-description {
+  position: relative;
+  z-index: 1;
+  margin-top: 0.55rem;
+  color: rgba(58, 43, 31, 0.78);
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1.65;
+}
+
+.result-modal-button {
+  position: relative;
+  z-index: 1;
+  margin-top: 1.25rem;
+  width: 100%;
+  border: 2px solid rgba(69, 111, 45, 0.38);
+  border-radius: 999px;
+  background: linear-gradient(180deg, #7fbc4d, #5a9f4b);
+  padding: 0.82rem 1rem;
+  color: white;
+  font-size: 0.95rem;
+  font-weight: 1000;
+  box-shadow:
+    0 4px 0 rgba(52, 93, 39, 0.55),
+    0 12px 20px rgba(64, 98, 40, 0.22),
+    inset 0 2px 0 rgba(255, 255, 255, 0.28);
+}
+
+.result-modal-button:hover {
+  filter: brightness(1.04);
+  transform: translateY(-1px);
+}
+
+.result-modal-button:active {
+  transform: translateY(1px);
+  box-shadow:
+    0 2px 0 rgba(52, 93, 39, 0.55),
+    0 7px 14px rgba(64, 98, 40, 0.18),
+    inset 0 2px 0 rgba(255, 255, 255, 0.2);
+}
+
+.food-pyramid-modal {
+  position: relative;
+  overflow: hidden;
+  border-radius: 1.35rem;
+  background:
+    linear-gradient(180deg, rgba(255, 249, 236, 0.18), rgba(247, 241, 223, 0.08));
+  box-shadow:
+    0 24px 44px rgba(31, 25, 15, 0.24),
+    0 0 0 1px rgba(255, 249, 236, 0.5);
+}
+
+.food-pyramid-title-bar {
+  position: relative;
+  z-index: 3;
+  display: grid;
+  height: clamp(5.2rem, 12vw, 8rem);
+  min-height: 0;
+  place-items: center;
+  overflow: hidden;
+  padding: 0.2rem 4.6rem 0.05rem;
+  pointer-events: none;
+}
+
+.food-pyramid-title-logo {
+  display: block;
+  width: min(42rem, 88vw);
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+  filter: drop-shadow(0 7px 10px rgba(70, 44, 18, 0.25));
+}
+
+.field-guide-progress-actions {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0.7rem;
+  align-self: center;
+}
+
+.field-guide-pyramid-button {
+  display: inline-grid;
+  width: min(13.6rem, 36vw);
+  height: min(6.15rem, 16vw);
+  place-items: center;
+  border: 0;
+  background: transparent;
+  overflow: visible;
+  padding: 0;
+  filter: drop-shadow(0 4px 7px rgba(65, 44, 22, 0.18));
+  transition: transform 160ms ease, filter 160ms ease;
+}
+
+.field-guide-pyramid-button img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+}
+
+.field-guide-pyramid-button:hover {
+  filter: drop-shadow(0 6px 9px rgba(65, 44, 22, 0.23)) brightness(1.03);
+  transform: translateY(-1px);
+}
+
+.field-guide-pyramid-button:active {
+  transform: translateY(1px) scale(0.99);
+}
+
+.food-pyramid-close {
+  position: absolute;
+  right: -0.55rem;
+  top: -0.55rem;
+  z-index: 5;
+  display: grid;
+  width: 2.65rem;
+  height: 2.65rem;
+  place-items: center;
+  border: 2px solid rgba(212, 178, 107, 0.72);
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.86), transparent 36%),
+    linear-gradient(180deg, #fff6d7, #ead08e);
+  color: #5a321c;
+  font-size: 1.45rem;
+  font-weight: 900;
+  line-height: 1;
+  box-shadow:
+    0 4px 0 rgba(126, 82, 32, 0.23),
+    0 10px 18px rgba(42, 29, 14, 0.18);
+  pointer-events: auto;
+}
+
+.food-pyramid-close:hover {
+  filter: brightness(1.04);
+  transform: translateY(-1px);
+}
+
+.food-pyramid-close:active {
+  transform: translateY(1px);
+  box-shadow:
+    inset 0 2px 5px rgba(126, 82, 32, 0.2),
+    0 4px 10px rgba(42, 29, 14, 0.16);
+}
+
+.food-pyramid-scroll {
+  scrollbar-color: rgba(120, 151, 73, 0.7) rgba(255, 249, 236, 0.28);
+  padding-top: 0 !important;
+}
+
+.food-pyramid-tier {
+  position: relative;
+  overflow: hidden;
+  background-size: cover;
+  background-position: center;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.48),
+    0 10px 20px rgba(59, 42, 25, 0.12);
+}
+
+.food-pyramid-tier::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background:
+    linear-gradient(90deg, rgba(255, 253, 247, 0.42), rgba(255, 253, 247, 0.08) 32%, rgba(255, 253, 247, 0.22));
+  pointer-events: none;
+}
+
+.food-pyramid-tier > * {
+  position: relative;
+  z-index: 1;
+}
+
+.food-pyramid-tier-info {
+  border: 1px solid rgba(255, 255, 255, 0.64);
+  backdrop-filter: blur(3px);
+}
+
+.food-pyramid-tier-info strong,
+.food-pyramid-tier-info span,
+.food-pyramid-tier-info p {
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.72);
+}
+
+.food-pyramid-tier-feature {
+  display: block;
+  overflow: visible;
+  white-space: normal;
+  text-overflow: clip;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+  line-break: loose;
+}
+
+.food-pyramid-group {
+  backdrop-filter: blur(2px);
+  box-shadow:
+    0 5px 12px rgba(63, 43, 23, 0.1),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.56);
+}
+
+.food-pyramid-group .insect-card {
+  background-color: rgba(255, 253, 247, 0.84);
+}
+
+@media (max-width: 640px) {
+  .food-pyramid-title-bar {
+    height: 5.2rem;
+    padding: 0.15rem 3.2rem 0;
+  }
+
+  .food-pyramid-title-logo {
+    width: min(34rem, 88vw);
+    height: 100%;
+  }
+
+  .food-pyramid-close {
+    width: 2.25rem;
+    height: 2.25rem;
+    font-size: 1.25rem;
+  }
+
+  .field-guide-pyramid-button {
+    width: min(11.5rem, 44vw);
+    height: min(5.2rem, 20vw);
+  }
+
+  .field-guide-progress-actions {
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+}
+
+/* 퀴즈·미션 완료 보상이 성장포인트 게이지로 날아가는 이펙트 (Quiz.jsx의 RewardBurst, Quests.jsx의 MissionRewardBurst). */
+.quiz-reward-spark {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 13px;
+  height: 13px;
+  border-radius: 999px 999px 999px 3px;
+  background: linear-gradient(135deg, #a9cb67, #5a9f4b);
+  color: #f2bf42;
+  font-size: 1.35rem;
+  opacity: 0;
+  text-shadow: 0 0 8px rgba(255, 242, 150, 0.9);
+  transform: translate(-50%, -50%) scale(0.35);
+  animation: quizRewardSpark 900ms var(--delay) cubic-bezier(0.22, 0.8, 0.32, 1) forwards;
+}
+
+@keyframes quizRewardSpark {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.35) rotate(0deg);
+  }
+  18% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.25) rotate(45deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(calc(-50% + var(--tx)), calc(-50% + var(--ty))) scale(0.7) rotate(180deg);
+  }
+}
+
+.ranch-top-icon-button {
+  display: grid;
+  width: 3rem;
+  height: 3rem;
+  place-items: center;
+  overflow: visible;
+  border-radius: 0;
+  background: transparent;
+  color: white;
+  text-shadow: 0 3px 0 rgba(42, 38, 32, 0.55), 0 0 8px rgba(0, 0, 0, 0.45);
+  filter: drop-shadow(0 5px 8px rgba(14, 28, 10, 0.36));
+  font-size: 1.8rem;
+  transition: transform 160ms ease, filter 160ms ease;
+}
+
+.ranch-top-icon-button img {
+  display: block;
+  width: 3.25rem;
+  height: 3.25rem;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+.ranch-top-icon-button[aria-label="알림"] img {
+  mix-blend-mode: screen;
+  transform: scale(1.35);
+}
+
+.ranch-top-icon-button[aria-label="설정"] img {
+  transform: scale(1.18);
+}
+
+.ranch-top-icon-button:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.08) drop-shadow(0 7px 10px rgba(14, 28, 10, 0.42));
+}
+
+.ranch-egg-help {
+  position: absolute;
+  left: clamp(0.65rem, 1.8vw, 1.1rem);
+  top: 50%;
+  z-index: 31;
+  display: flex;
+  width: 4.25rem;
+  min-height: 5.4rem;
+  transform: translateY(-50%);
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 0.15rem;
+  border: 3px solid rgba(74, 54, 32, 0.18);
+  border-radius: 1rem;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(252, 244, 226, 0.94));
+  box-shadow: 0 5px 0 rgba(111, 76, 38, 0.28), 0 12px 26px rgba(25, 40, 16, 0.28);
+}
+
+.ranch-egg-help__face {
+  position: relative;
+  display: block;
+  width: 3rem;
+  height: 3.35rem;
+  border-radius: 48% 48% 45% 45%;
+  background:
+    radial-gradient(circle at 35% 46%, #2a2620 0 5%, transparent 6%),
+    radial-gradient(circle at 64% 46%, #2a2620 0 5%, transparent 6%),
+    radial-gradient(ellipse at 50% 63%, #d77b62 0 8%, transparent 9%),
+    radial-gradient(circle at 36% 18%, rgba(255,255,255,0.9) 0 9%, transparent 10%),
+    radial-gradient(circle at 50% 50%, #e4ef7c, #a8c653 66%, #779f3f);
+  box-shadow: inset 0 3px 0 rgba(255,255,255,0.5), 0 5px 10px rgba(61, 86, 32, 0.24);
+}
+
+.ranch-egg-help__face::before,
+.ranch-egg-help__face::after {
+  content: "";
+  position: absolute;
+  top: -0.42rem;
+  width: 0.9rem;
+  height: 1rem;
+  border-radius: 100% 0 100% 0;
+  background: #65ad42;
+}
+
+.ranch-egg-help__face::before {
+  left: 1rem;
+  transform: rotate(-28deg);
+}
+
+.ranch-egg-help__face::after {
+  right: 0.78rem;
+  transform: rotate(38deg) scaleX(-1);
+}
+
+.ranch-egg-help__label {
+  color: #2a2620;
+  font-size: 0.78rem;
+  font-weight: 1000;
+}
+
+.ranch-mission-button {
+  position: relative;
+  display: inline-flex;
+  width: fit-content;
+  max-width: 100%;
+  align-items: center;
+  gap: 0.75rem;
+  border: 2px solid rgba(255, 255, 255, 0.52);
+  border-radius: 1.2rem;
+  background: rgba(255, 255, 255, 0.84);
+  padding: 0.75rem 0.95rem;
+  color: #2a2620;
+  box-shadow: 0 8px 0 rgba(111, 76, 38, 0.18), 0 18px 36px rgba(24, 38, 16, 0.22);
+  backdrop-filter: blur(14px);
+  transition: transform 160ms ease, filter 160ms ease;
+}
+
+.ranch-mission-button:hover {
+  transform: translateY(-3px);
+  filter: brightness(1.04);
+}
+
+.ranch-mission-icon {
+  display: grid;
+  width: 2.7rem;
+  height: 2.7rem;
+  place-items: center;
+  border-radius: 0.9rem;
+  background: linear-gradient(180deg, #fff5cf, #e2bf75);
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.8), 0 4px 10px rgba(74, 50, 22, 0.2);
+  font-size: 1.45rem;
+}
+
+.ranch-profile-avatar.ranch-sprite,
+.ranch-mission-icon.ranch-sprite,
+.ranch-egg-help__face.ranch-sprite {
+  display: block;
+  border-radius: 0;
+  background-color: transparent;
+  box-shadow: none;
+}
+
+.ranch-profile-avatar.ranch-sprite {
+  width: 3.4rem;
+  height: 3.4rem;
+  filter: drop-shadow(0 3px 4px rgba(44, 82, 32, 0.3));
+}
+
+.ranch-mission-icon.ranch-sprite {
+  width: 3rem;
+  height: 3rem;
+  filter: drop-shadow(0 3px 3px rgba(74, 50, 22, 0.25));
+}
+
+.ranch-egg-help__face.ranch-sprite {
+  position: relative;
+  width: 3.35rem;
+  height: 3.35rem;
+  filter: drop-shadow(0 4px 5px rgba(61, 86, 32, 0.3));
+}
+
+.ranch-egg-help__face.ranch-sprite::before,
+.ranch-egg-help__face.ranch-sprite::after {
+  content: none;
+}
+
+.ranch-alert-badge {
+  position: absolute;
+  right: -0.45rem;
+  top: -0.45rem;
+  display: grid;
+  width: 1.55rem;
+  height: 1.55rem;
+  place-items: center;
+  border: 2px solid white;
+  border-radius: 999px;
+  background: #ef2f2f;
+  color: white;
+  font-size: 1rem;
+  font-weight: 1000;
+  box-shadow: 0 0 0 0 rgba(239, 47, 47, 0.65), 0 5px 12px rgba(91, 12, 12, 0.35);
+  animation: ranchBadgePulse 1.05s ease-in-out infinite;
+}
+
+@keyframes ranchBadgePulse {
+  0%, 100% {
+    transform: scale(1) rotate(-5deg);
+    box-shadow: 0 0 0 0 rgba(239, 47, 47, 0.58), 0 5px 12px rgba(91, 12, 12, 0.35);
+  }
+  50% {
+    transform: scale(1.16) rotate(5deg);
+    box-shadow: 0 0 0 9px rgba(239, 47, 47, 0), 0 7px 16px rgba(91, 12, 12, 0.4);
+  }
+}
+
+.ranch-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: grid;
+  place-items: center;
+  background: rgba(15, 23, 12, 0.42);
+  padding: 1rem;
+  backdrop-filter: blur(3px);
+}
+
+.ranch-modal {
+  position: relative;
+  width: min(34rem, 94vw);
+  max-height: min(42rem, 88vh);
+  overflow: hidden;
+  border: 2px solid rgba(255, 255, 255, 0.68);
+  border-radius: 1.6rem;
+  background: rgba(255, 252, 240, 0.96);
+  padding: 1.25rem;
+  box-shadow: 0 24px 80px rgba(10, 20, 8, 0.38), inset 0 2px 0 rgba(255, 255, 255, 0.9);
+}
+
+.ranch-modal-close {
+  position: absolute;
+  right: 0.85rem;
+  top: 0.85rem;
+  display: grid;
+  width: 2rem;
+  height: 2rem;
+  place-items: center;
+  border-radius: 999px;
+  background: rgba(42, 38, 32, 0.1);
+  color: #2a2620;
+  font-size: 1.35rem;
+  font-weight: 900;
+}
+
+.ranch-profile-modal-avatar,
+.ranch-mission-modal-icon {
+  display: grid;
+  width: 4rem;
+  height: 4rem;
+  place-items: center;
+  border-radius: 1.25rem;
+  background: linear-gradient(180deg, #f4ffd7, #8fca5a);
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.78), 0 8px 18px rgba(62, 96, 38, 0.24);
+  font-size: 2rem;
+}
+
+.ranch-stat-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  border-radius: 1rem;
+  background: rgba(91, 156, 77, 0.1);
+  padding: 0.8rem;
+}
+
+.ranch-stat-tile span {
+  color: rgba(63, 58, 50, 0.72);
+  font-weight: 800;
+}
+
+.ranch-stat-tile strong {
+  color: #2a2620;
+  font-size: 1.1rem;
+  font-weight: 1000;
+}
+
+.ranch-mission-row {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.72);
+  padding: 0.8rem;
+  box-shadow: inset 0 0 0 1px rgba(91, 156, 77, 0.14);
+}
+
+.ranch-reward-button {
+  min-width: 4.5rem;
+  border-radius: 999px;
+  background: #5b9c4d;
+  padding: 0.55rem 0.75rem;
+  color: white;
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.ranch-reward-button:disabled {
+  background: rgba(63, 58, 50, 0.18);
+  color: rgba(63, 58, 50, 0.58);
+}
+
+.ranch-habitat-label {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  white-space: nowrap;
+  border-radius: 999px;
+  background: rgba(18, 44, 18, 0.08);
+  padding: 0.15rem 0.35rem;
+  color: #fff7c2;
+  font-family: "Jua", "Pretendard", "Apple SD Gothic Neo", sans-serif;
+  /* 대객체별 확대비율(scale)이 서로 달라도 라벨 글자 크기는 항상 동일해야 한다 —
+     기준은 숲(scale 1.15)일 때 보이던 크기. base clamp(1rem,2vw,1.35rem)에 1.15를 곱함. */
+  font-size: clamp(1.15rem, 2.3vw, 1.5525rem);
+  font-weight: 900;
+  letter-spacing: 0;
+  text-shadow:
+    0 3px 0 rgba(41, 36, 19, 0.72),
+    0 0 8px rgba(29, 54, 12, 0.95),
+    0 0 16px rgba(255, 241, 160, 0.45);
+  -webkit-text-stroke: 0.5px rgba(49, 35, 15, 0.75);
+}
+
+.ranch-habitat-label__count {
+  color: #ffffff;
+  font-size: 0.84em;
+  text-shadow:
+    0 2px 0 rgba(41, 36, 19, 0.7),
+    0 0 8px rgba(0, 0, 0, 0.55);
+}
+
+@media (max-width: 640px) {
+  .ranch-side-hud {
+    width: calc(100vw - 1rem);
+    gap: 0.2rem;
+    overflow-x: auto;
+    justify-content: flex-start;
+  }
+
+  .ranch-hud-button {
+    flex: 0 0 4.2rem;
+  }
+}
+
+/* Individual icon files: keep the full artwork visible instead of sprite-cropping. */
+.ranch-hud-icon > img {
+  display: block;
+  width: 3.55rem;
+  height: 3.2rem;
+  object-fit: contain;
+  border-radius: 0;
+  background: transparent;
+  filter: drop-shadow(0 3px 2px rgba(0, 0, 0, 0.22));
+}
+
+.ranch-profile-avatar,
+.ranch-mission-icon,
+.ranch-egg-help__face {
+  display: block;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.ranch-profile-avatar {
+  width: 3.65rem;
+  height: 3.65rem;
+  flex: 0 0 auto;
+  filter: drop-shadow(0 3px 4px rgba(44, 82, 32, 0.3));
+}
+
+.ranch-mission-icon {
+  width: 3.65rem;
+  height: 3.15rem;
+  filter: drop-shadow(0 3px 3px rgba(74, 50, 22, 0.25));
+}
+
+.ranch-egg-help__face {
+  width: 3.65rem;
+  height: 3.65rem;
+  filter: drop-shadow(0 4px 5px rgba(61, 86, 32, 0.3));
+}
+
+.ranch-egg-help__face::before,
+.ranch-egg-help__face::after {
+  content: none !important;
+}
+
+.ranch-top-icon-button img {
+  display: block;
+  width: 4.25rem;
+  height: 4.25rem;
+  object-fit: contain;
+}
+
+.ranch-top-icon-button[aria-label="알림"] img,
+.ranch-top-icon-button[aria-label="설정"] img {
+  transform: scale(1.18);
+}
+
+/* Final HUD image mode: user-provided files are individual icons, not a sprite. */
+.ranch-hud-icon {
+  position: relative;
+}
+
+.ranch-hud-icon > img {
+  display: block !important;
+  width: clamp(3.2rem, 5.6vw, 4.45rem) !important;
+  height: clamp(3rem, 5.2vw, 4.15rem) !important;
+  object-fit: contain !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  filter: drop-shadow(0 4px 3px rgba(0, 0, 0, 0.24)) !important;
+}
+
+.ranch-profile-avatar {
+  width: 3.75rem !important;
+  height: 3.75rem !important;
+  object-fit: contain !important;
+}
+
+.ranch-mission-icon {
+  width: 3.55rem !important;
+  height: 3.55rem !important;
+  object-fit: contain !important;
+}
+
+.ranch-egg-help__face {
+  width: 3.75rem !important;
+  height: 3.75rem !important;
+  object-fit: contain !important;
+}
+
+.ranch-top-icon-button {
+  width: 4.4rem !important;
+  height: 4.4rem !important;
+}
+
+.ranch-top-icon-button img {
+  width: 4.9rem !important;
+  height: 4.9rem !important;
+  object-fit: contain !important;
+  transform: none !important;
+}
+
+.ranch-nav-alert-badge {
+  position: absolute;
+  right: 0.7rem;
+  top: 0.28rem;
+  display: grid;
+  width: 1.35rem;
+  height: 1.35rem;
+  place-items: center;
+  border: 2px solid #fff;
+  border-radius: 999px;
+  background: #ef2f2f;
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 1000;
+  line-height: 1;
+  box-shadow: 0 0 0 0 rgba(239, 47, 47, 0.6), 0 5px 12px rgba(91, 12, 12, 0.35);
+  animation: ranchBadgePulse 1.05s ease-in-out infinite;
+}
+
+/* Ranch HUD cleanup: independent menu icons, no large bottom background card. */
+.ranch-side-hud {
+  width: auto !important;
+  max-width: calc(100vw - 2rem) !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  gap: clamp(0.35rem, 1vw, 0.8rem) !important;
+  padding: 0 !important;
+}
+
+.ranch-hud-button {
+  position: relative !important;
+  width: clamp(4.7rem, 7.4vw, 5.9rem) !important;
+  min-height: clamp(4.5rem, 6.9vw, 5.5rem) !important;
+  border: 0 !important;
+  border-radius: 1rem !important;
+  background: rgba(255, 250, 238, 0.82) !important;
+  box-shadow: 0 5px 0 rgba(111, 76, 38, 0.2), 0 12px 24px rgba(25, 40, 16, 0.2) !important;
+  backdrop-filter: blur(8px) !important;
+  padding: 0.45rem 0.45rem 0.35rem !important;
+}
+
+.ranch-hud-icon > img {
+  width: clamp(2.5rem, 4vw, 3rem) !important;
+  height: clamp(2.5rem, 4vw, 3rem) !important;
+  object-fit: contain !important;
+  object-position: center !important;
+  filter: drop-shadow(0 3px 3px rgba(0, 0, 0, 0.22)) !important;
+}
+
+.ranch-hud-icon strong {
+  margin-top: 0.1rem !important;
+  font-size: 0.78rem !important;
+}
+
+.ranch-nav-alert-badge {
+  right: 0.25rem !important;
+  top: 0.15rem !important;
+  width: 1.25rem !important;
+  height: 1.25rem !important;
+  z-index: 10 !important;
+  font-size: 0.65rem !important;
+}
+
+.ranch-profile-avatar,
+.ranch-mission-icon,
+.ranch-egg-help__face {
+  display: grid !important;
+  place-items: center !important;
+  border-radius: 999px !important;
+  background: rgba(255, 255, 255, 0.55) !important;
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.7), 0 4px 10px rgba(25, 40, 16, 0.18) !important;
+  line-height: 1 !important;
+}
+
+.ranch-profile-avatar {
+  width: 3.4rem !important;
+  height: 3.4rem !important;
+  font-size: 2rem !important;
+}
+
+.ranch-mission-icon {
+  width: 3.25rem !important;
+  height: 3.25rem !important;
+  font-size: 1.75rem !important;
+}
+
+.ranch-egg-help__face {
+  width: 3.55rem !important;
+  height: 3.55rem !important;
+  font-size: 2.2rem !important;
+}
+
+.ranch-egg-help__face::before,
+.ranch-egg-help__face::after {
+  content: none !important;
+}
+
+.ranch-top-tools {
+  gap: 1rem !important;
+}
+
+.ranch-top-icon-button {
+  width: 3.35rem !important;
+  height: 3.35rem !important;
+  padding: 0.25rem !important;
+  border-radius: 999px !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+
+.ranch-top-icon-button img {
+  width: 2.6rem !important;
+  height: 2.6rem !important;
+  object-fit: contain !important;
+  transform: none !important;
+}
+
+/* User image assets, oversized icon-only HUD. */
+.ranch-hud-button {
+  width: clamp(4.76rem, 7.49vw, 6.23rem) !important;
+  min-height: clamp(4.52rem, 7.07vw, 5.85rem) !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  padding: 0.2rem !important;
+}
+
+.ranch-hud-button:hover,
+.ranch-hud-button:focus-visible {
+  background: transparent !important;
+  filter: brightness(1.08) drop-shadow(0 5px 8px rgba(0, 0, 0, 0.22)) !important;
+}
+
+.ranch-hud-icon > img {
+  width: clamp(4.03rem, 6.51vw, 5.29rem) !important;
+  height: clamp(3.82rem, 6.27vw, 5.01rem) !important;
+  object-fit: contain !important;
+  object-position: center !important;
+}
+
+.ranch-hud-icon strong {
+  margin-top: -0.25rem !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-width: 3.4rem !important;
+  border: 1px solid rgba(111, 76, 38, 0.18) !important;
+  border-radius: 999px !important;
+  background: rgba(255, 248, 232, 0.92) !important;
+  padding: 0.16rem 0.5rem !important;
+  color: #2a2620 !important;
+  font-size: 0.86rem !important;
+  font-weight: 1000 !important;
+  box-shadow: 0 2px 6px rgba(25, 40, 16, 0.18), inset 0 1px 0 rgba(255,255,255,0.9) !important;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+}
+
+.ranch-profile-avatar,
+.ranch-mission-icon,
+.ranch-egg-help__face {
+  display: block !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  object-fit: contain !important;
+  object-position: center !important;
+}
+
+.ranch-profile-avatar {
+  width: 3.95rem !important;
+  height: 3.95rem !important;
+}
+
+.ranch-mission-icon {
+  width: 3.9rem !important;
+  height: 3.9rem !important;
+}
+
+.ranch-egg-help__face {
+  width: 4.15rem !important;
+  height: 4.15rem !important;
+}
+
+.ranch-top-icon-button {
+  width: clamp(7rem, 9.3vw, 8.6rem) !important;
+  height: clamp(7rem, 9.3vw, 8.6rem) !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+
+.ranch-top-icon-button img {
+  width: clamp(6.6rem, 8.8vw, 8.1rem) !important;
+  height: clamp(6.6rem, 8.8vw, 8.1rem) !important;
+  object-fit: contain !important;
+  object-position: center !important;
+}
+
+/* Final scale pass requested: larger top tools, tighter spacing, fuller left-card art. */
+.ranch-top-tools {
+  gap: 0 !important;
+}
+
+.ranch-top-icon-button {
+  width: clamp(7.2rem, 9.4vw, 8.8rem) !important;
+  height: clamp(7.2rem, 9.4vw, 8.8rem) !important;
+  margin-inline: -1.75rem !important;
+}
+
+.ranch-top-icon-button img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain !important;
+}
+
+.ranch-top-icon-button[aria-label="알림"] img,
+.ranch-top-icon-button[aria-label="설정"] img {
+  transform: scale(1.12) !important;
+}
+
+.ranch-profile-avatar {
+  width: 5.35rem !important;
+  height: 5.35rem !important;
+  margin: -0.7rem -0.5rem -0.7rem -0.7rem !important;
+  transform: scale(1.35) !important;
+}
+
+.ranch-mission-icon {
+  width: 5.35rem !important;
+  height: 5.35rem !important;
+  margin: -0.9rem -0.65rem -0.9rem -0.8rem !important;
+  transform: scale(1.42) !important;
+}
+
+.ranch-egg-help {
+  width: 5.6rem !important;
+  min-height: 7.4rem !important;
+}
+
+.ranch-egg-help__face {
+  width: 6.1rem !important;
+  height: 6.1rem !important;
+  margin-top: -0.5rem !important;
+  transform: scale(1.3) !important;
+}
+
+/* Final helper/mission enlargement and normalized top icons. */
+.ranch-mission-button {
+  min-height: 8.1rem !important;
+  padding: 1rem 1.3rem !important;
+}
+
+.ranch-mission-icon {
+  width: 7.4rem !important;
+  height: 7.4rem !important;
+  margin: -1.6rem -1.2rem -1.6rem -1.2rem !important;
+  transform: scale(1.34) !important;
+}
+
+.ranch-egg-help {
+  width: 7.4rem !important;
+  min-height: 10rem !important;
+}
+
+.ranch-egg-help__face {
+  width: 8rem !important;
+  height: 8rem !important;
+  margin-top: -1.05rem !important;
+  transform: scale(1.24) !important;
+}
+
+.ranch-egg-help__label {
+  margin-top: -0.35rem !important;
+  font-size: 0.9rem !important;
+  font-weight: 1000 !important;
+}
+
+.ranch-top-tools {
+  gap: 0 !important;
+}
+
+.ranch-top-icon-button {
+  width: 10.8rem !important;
+  height: 10.8rem !important;
+  margin-inline: -3rem !important;
+}
+
+.ranch-top-icon-button img {
+  width: 10.1rem !important;
+  height: 10.1rem !important;
+  object-fit: contain !important;
+}
+
+.ranch-top-icon-button[aria-label="알림"] img,
+.ranch-top-icon-button[aria-label="설정"] img {
+  transform: none !important;
+}
+
+/* Compact left cards with larger artwork. */
+.ranch-mission-button {
+  min-height: 5.9rem !important;
+  max-width: 14.2rem !important;
+  border-radius: 1.1rem !important;
+  padding: 0.55rem 0.9rem !important;
+  gap: 0.45rem !important;
+}
+
+.ranch-mission-icon {
+  width: 5.9rem !important;
+  height: 5.9rem !important;
+  margin: -1.35rem -0.9rem -1.35rem -1rem !important;
+  transform: scale(1.52) !important;
+}
+
+.ranch-egg-help {
+  width: 5.45rem !important;
+  min-height: 7.5rem !important;
+  padding: 0.35rem 0.25rem !important;
+}
+
+.ranch-egg-help__face {
+  width: 6.9rem !important;
+  height: 6.9rem !important;
+  margin-top: -1rem !important;
+  transform: scale(1.36) !important;
+}
+
+.ranch-egg-help__label {
+  margin-top: -0.7rem !important;
+  font-size: 0.82rem !important;
+  white-space: nowrap !important;
+}
+
+/* Egg cutout assets can be shown much larger because the background is removed. */
+.ranch-profile-avatar {
+  transform: scale(1.55) !important;
+}
+
+.ranch-egg-help__face {
+  transform: scale(1.82) !important;
+  margin-top: -1.25rem !important;
+}
+
+/* Final top-tool size: no overlap, equal visual size. */
+.ranch-top-tools {
+  gap: 0.25rem !important;
+}
+
+.ranch-top-icon-button {
+  width: 5.6rem !important;
+  height: 5.6rem !important;
+  margin-inline: 0 !important;
+}
+
+.ranch-top-icon-button img {
+  width: 5.15rem !important;
+  height: 5.15rem !important;
+  object-fit: contain !important;
+  transform: none !important;
+}
+
+.ranch-nav-alert-badge {
+  display: none !important;
+}
+
+.ranch-habitat-label {
+  transform: translateY(-1.65rem) !important;
+  margin-top: -1.2rem !important;
+}
+
+/* Ranch HUD final cleanup: use the clean egg crop without broken cutout scaling. */
+.ranch-profile-avatar,
+.ranch-egg-help__face {
+  background: transparent !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  object-fit: contain !important;
+  object-position: center !important;
+}
+
+.ranch-profile-avatar {
+  width: 4.45rem !important;
+  height: 4.45rem !important;
+  margin: -0.45rem -0.25rem -0.45rem -0.55rem !important;
+  transform: none !important;
+}
+
+.ranch-egg-help {
+  width: 5.7rem !important;
+  min-height: 7.2rem !important;
+  padding: 0.3rem 0.25rem 0.55rem !important;
+  overflow: visible !important;
+}
+
+.ranch-egg-help__face {
+  width: 5.25rem !important;
+  height: 5.25rem !important;
+  margin-top: 0 !important;
+  transform: none !important;
+}
+
+.ranch-egg-help__label {
+  margin-top: -0.1rem !important;
+  color: #211b14 !important;
+  font-size: 0.82rem !important;
+  font-weight: 1000 !important;
+  line-height: 1.05 !important;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.95) !important;
+  white-space: nowrap !important;
+}
+
+.ranch-top-tools {
+  gap: 0.12rem !important;
+  align-items: center !important;
+}
+
+.ranch-top-icon-button {
+  width: 4.75rem !important;
+  height: 4.75rem !important;
+  margin-inline: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.ranch-top-icon-button img {
+  width: 72.8px !important;
+  height: 72.8px !important;
+  object-fit: contain !important;
+  object-position: center !important;
+  transform: none !important;
+}
+
+.ranch-nav-alert-badge {
+  display: none !important;
+}
+
+/* Mission HUD badge: anchored to the mission icon image, visible only when rendered. */
+.ranch-hud-icon--quests .ranch-hud-icon-art {
+  position: relative !important;
+}
+
+.ranch-hud-icon--quests .ranch-hud-alert-badge {
+  position: absolute !important;
+  right: 9% !important;
+  top: 8% !important;
+  z-index: 30 !important;
+  display: grid !important;
+  width: 1.65rem !important;
+  height: 1.65rem !important;
+  place-items: center !important;
+  border: 0 !important;
+  background: transparent !important;
+  pointer-events: none !important;
+  transform-origin: center !important;
+  animation: ranch-mission-badge-bounce 1s ease-in-out infinite !important;
+}
+
+.ranch-hud-icon--quests .ranch-hud-alert-badge > span {
+  display: grid !important;
+  width: 1.65rem !important;
+  height: 1.65rem !important;
+  place-items: center !important;
+  border: 2px solid #fff !important;
+  border-radius: 999px !important;
+  background: #ef1f1f !important;
+  color: #fff !important;
+  font-size: 1rem !important;
+  font-weight: 1000 !important;
+  line-height: 1 !important;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.28) !important;
+  box-shadow: 0 0 0 0 rgba(239, 31, 31, 0.7), 0 5px 12px rgba(91, 12, 12, 0.38) !important;
+  animation: ranch-mission-badge-flash 1s ease-in-out infinite !important;
+}
+
+@keyframes ranch-mission-badge-bounce {
+  0%,
+  100% {
+    transform: scale(1) translateY(0);
+  }
+  35% {
+    transform: scale(1.2) translateY(-2px);
+  }
+  65% {
+    transform: scale(1.04) translateY(0);
+  }
+}
+
+@keyframes ranch-mission-badge-flash {
+  0%,
+  100% {
+    opacity: 1;
+    box-shadow: 0 0 0 0 rgba(239, 31, 31, 0.7), 0 5px 12px rgba(91, 12, 12, 0.38);
+  }
+  50% {
+    opacity: 0.58;
+    box-shadow: 0 0 0 8px rgba(239, 31, 31, 0), 0 7px 16px rgba(91, 12, 12, 0.48);
+  }
+}
+
+.ranch-hud-icon-art {
+  position: relative !important;
+  display: grid !important;
+  width: 2.55rem !important;
+  height: 2.55rem !important;
+  place-items: center !important;
+  overflow: visible !important;
+  border-radius: 999px !important;
+  background: var(--ranch-icon-bg, #eef6ea) !important;
+  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.14)) !important;
+  transform: none !important;
+}
+
+.ranch-hud-icon strong {
+  margin-top: 0 !important;
+}
+
+.ranch-hud-icon-art > img {
+  width: 1.75rem !important;
+  height: 1.75rem !important;
+  object-fit: contain !important;
+  transform: scale(0.72) !important;
+}
+
+.ranch-hud-icon--exploration .ranch-hud-icon-art > img {
+  transform: scale(0.66) !important;
+}
+
+.ranch-hud-alert-badge {
+  position: absolute !important;
+  display: grid !important;
+  right: 12% !important;
+  top: 12% !important;
+  z-index: 20 !important;
+  width: 1.55rem !important;
+  height: 1.55rem !important;
+  place-items: center !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  animation: ranch-hud-badge-pop 1.15s ease-in-out infinite !important;
+  transform: none !important;
+}
+
+.ranch-hud-alert-badge > span {
+  display: grid !important;
+  width: 1.55rem !important;
+  height: 1.55rem !important;
+  place-items: center !important;
+  border: 2px solid #fff !important;
+  border-radius: 999px !important;
+  background: #ef2f2f !important;
+  color: #fff !important;
+  font-size: 0.95rem !important;
+  font-weight: 1000 !important;
+  line-height: 1 !important;
+  box-shadow: 0 0 0 0 rgba(239, 47, 47, 0.65), 0 5px 12px rgba(91, 12, 12, 0.35) !important;
+  animation: ranch-hud-badge-pulse 1.15s ease-in-out infinite !important;
+}
+
+@keyframes ranch-hud-badge-pop {
+  0%,
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+  35% {
+    transform: scale(1.18) rotate(-6deg);
+  }
+  62% {
+    transform: scale(1.04) rotate(4deg);
+  }
+}
+
+@keyframes ranch-hud-badge-pulse {
+  0%,
+  100% {
+    background: #ef2f2f;
+    box-shadow: 0 0 0 0 rgba(239, 47, 47, 0.65), 0 5px 12px rgba(91, 12, 12, 0.35);
+  }
+  50% {
+    background: #ff1f1f;
+    box-shadow: 0 0 0 8px rgba(239, 47, 47, 0), 0 7px 16px rgba(91, 12, 12, 0.45);
+  }
+}
+
+@keyframes tutorial-bounce {
+  0% {
+    transform: translateY(0) scale(1);
+  }
+  45% {
+    transform: translateY(-0.55rem) scale(1.06);
+  }
+  100% {
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes egg-grant-fly-in {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, -34vh, 0) scale(0.18) rotate(-10deg);
+  }
+  62% {
+    opacity: 1;
+    transform: translate3d(0, 0.8rem, 0) scale(1.08) rotate(2deg);
+  }
+  78% {
+    transform: translate3d(0, -0.55rem, 0) scale(0.96) rotate(0deg);
+  }
+  90% {
+    transform: translate3d(0, 0.18rem, 0) scale(1.02);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+.egg-grant-modal {
+  font-family: "Jua", "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+}
+
+.egg-grant-modal__egg {
+  animation: egg-grant-fly-in 820ms cubic-bezier(0.2, 0.9, 0.22, 1.18) both;
+  transform-origin: center bottom;
+  will-change: transform, opacity;
+}
+
+.tutorial-speech-bubble {
+  font-family: "Jua", "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  color: #2c241b;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.72);
+}
+
+.tutorial-speech-bubble h2,
+.tutorial-speech-bubble button,
+.tutorial-speech-bubble span {
+  letter-spacing: 0;
+}
+
+.tutorial-speech-tail {
+  box-shadow: -2px 2px 5px rgba(104, 76, 24, 0.08);
+}
+
+.tutorial-egg-character,
+.tutorial-egg-character img {
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  filter: none !important;
+}
+
+.tutorial-target-guide {
+  display: grid;
+  min-width: 8rem;
+  min-height: 8rem;
+  place-items: center;
+}
+
+.tutorial-target-ring {
+  position: absolute;
+  width: clamp(6.5rem, 14vw, 11rem);
+  height: clamp(6.5rem, 14vw, 11rem);
+  border: 0.28rem solid rgba(252, 211, 77, 0.95);
+  border-radius: 999px;
+  box-shadow:
+    0 0 0 0 rgba(132, 204, 22, 0.45),
+    0 0 24px rgba(254, 240, 138, 0.75);
+  animation: tutorial-target-pulse 1.25s ease-out infinite;
+}
+
+.tutorial-target-ring--small {
+  width: 5.5rem;
+  height: 5.5rem;
+}
+
+.tutorial-target-arrow {
+  position: absolute;
+  top: -3.2rem;
+  font-size: 2.8rem;
+  line-height: 1;
+  filter: drop-shadow(0 5px 0 rgba(45, 32, 12, 0.22)) drop-shadow(0 8px 12px rgba(0, 0, 0, 0.28));
+  animation: tutorial-target-bounce 0.82s ease-in-out infinite;
+}
+
+.tutorial-target-label {
+  position: absolute;
+  bottom: -2.65rem;
+  white-space: nowrap;
+  border-radius: 999px;
+  background: rgba(35, 28, 18, 0.9);
+  padding: 0.45rem 0.75rem;
+  color: white;
+  font-family: "Jua", "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  font-size: 0.8rem;
+  font-weight: 900;
+  letter-spacing: 0;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.24);
+}
+
+@keyframes tutorial-target-pulse {
+  0% {
+    transform: scale(0.82);
+    opacity: 0.95;
+    box-shadow:
+      0 0 0 0 rgba(132, 204, 22, 0.55),
+      0 0 24px rgba(254, 240, 138, 0.75);
+  }
+  100% {
+    transform: scale(1.22);
+    opacity: 0;
+    box-shadow:
+      0 0 0 1.3rem rgba(132, 204, 22, 0),
+      0 0 24px rgba(254, 240, 138, 0);
+  }
+}
+
+/* Bottom ranch menu: show only the logo artwork, without circular icon plates. */
+.ranch-hud-icon-art {
+  width: fit-content !important;
+  height: auto !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  filter: none !important;
+}
+
+.ranch-hud-icon-art > img,
+.ranch-hud-icon--exploration .ranch-hud-icon-art > img {
+  width: clamp(4.38rem, 6.93vw, 5.64rem) !important;
+  height: clamp(4.17rem, 6.62vw, 5.36rem) !important;
+  object-fit: contain !important;
+  transform: none !important;
+  filter: drop-shadow(0 3px 3px rgba(35, 28, 18, 0.2)) !important;
+}
+
+@keyframes tutorial-target-bounce {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-0.55rem) scale(1.06);
+  }
+}
+
+/* Ranch top profile renewal: explorer notebook card with the currency banner attached. */
+.ranch-profile-cluster {
+  align-items: stretch !important;
+  gap: 0.45rem !important;
+}
+
+.ranch-profile-card {
+  position: relative !important;
+  width: min(22.5rem, 58vw) !important;
+  min-height: 6.9rem !important;
+  align-items: center !important;
+  gap: 0.95rem !important;
+  overflow: visible !important;
+  border: 2px solid rgba(197, 155, 84, 0.62) !important;
+  border-radius: 1.15rem !important;
+  background:
+    radial-gradient(circle at 9% 10%, rgba(183, 221, 99, 0.28), transparent 16%),
+    linear-gradient(180deg, rgba(255, 252, 238, 0.98), rgba(250, 239, 205, 0.96)) !important;
+  padding: 0.78rem 1rem 0.78rem 0.82rem !important;
+  box-shadow:
+    0 5px 0 rgba(126, 92, 42, 0.2),
+    0 16px 30px rgba(33, 45, 20, 0.23),
+    inset 0 0 0 2px rgba(255, 255, 255, 0.62) !important;
+  backdrop-filter: blur(8px) !important;
+}
+
+.ranch-profile-card::before {
+  content: "";
+  position: absolute;
+  inset: 0.42rem;
+  pointer-events: none;
+  border: 1.5px dashed rgba(183, 149, 75, 0.36);
+  border-radius: 0.88rem;
+}
+
+.ranch-profile-card::after {
+  content: "";
+  position: absolute;
+  right: 0.55rem;
+  bottom: 0.38rem;
+  width: 3.6rem;
+  height: 2rem;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 20% 70%, #9fcf55 0 18%, transparent 19%),
+    radial-gradient(circle at 44% 58%, #7eb547 0 20%, transparent 21%),
+    radial-gradient(circle at 70% 72%, #b7d96a 0 17%, transparent 18%);
+  opacity: 0.72;
+}
+
+.ranch-profile-avatar {
+  width: 5.35rem !important;
+  height: 5.35rem !important;
+  margin: 0 !important;
+  padding: 0.42rem !important;
+  border: 2px solid rgba(205, 171, 92, 0.55) !important;
+  border-radius: 1rem !important;
+  background:
+    radial-gradient(circle at 50% 55%, rgba(224, 245, 145, 0.98), rgba(251, 246, 202, 0.95) 62%, rgba(238, 224, 171, 0.94)) !important;
+  box-shadow:
+    inset 0 0 0 3px rgba(255, 255, 255, 0.72),
+    0 8px 16px rgba(88, 63, 28, 0.18) !important;
+  object-fit: contain !important;
+}
+
+.ranch-profile-card .text-sm {
+  font-size: 1.55rem !important;
+  line-height: 1.05 !important;
+}
+
+.ranch-profile-rank-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: #4f7f32;
+  font-size: 0.76rem;
+  font-weight: 1000;
+  letter-spacing: 0.22em;
+}
+
+.ranch-profile-rank-label::before,
+.ranch-profile-rank-label::after {
+  content: "";
+  width: 0.55rem;
+  height: 0.38rem;
+  border-radius: 100% 0;
+  background: #77aa43;
+  transform: rotate(26deg);
+}
+
+.ranch-profile-card .text-\[9px\] {
+  font-size: 0.68rem !important;
+}
+
+.ranch-profile-card .h-1\.5 {
+  height: 0.48rem !important;
+  background: rgba(218, 235, 170, 0.92) !important;
+}
+
+.ranch-profile-card .text-\[9px\].tabular-nums {
+  font-size: 0.68rem !important;
+  color: rgba(75, 58, 34, 0.66) !important;
+}
+
+.ranch-currency-pill {
+  min-height: 6.9rem !important;
+  align-self: stretch !important;
+  gap: 0.48rem !important;
+  border: 2px solid rgba(197, 155, 84, 0.62) !important;
+  border-radius: 1.15rem !important;
+  background:
+    radial-gradient(circle at 82% 78%, rgba(164, 207, 90, 0.35), transparent 26%),
+    linear-gradient(180deg, rgba(255, 252, 238, 0.98), rgba(248, 238, 202, 0.96)) !important;
+  padding: 0.75rem 0.85rem !important;
+  color: #3a2b1f !important;
+  font-size: 1.32rem !important;
+  font-weight: 1000 !important;
+  box-shadow:
+    0 5px 0 rgba(126, 92, 42, 0.18),
+    0 14px 26px rgba(33, 45, 20, 0.2),
+    inset 0 0 0 2px rgba(255, 255, 255, 0.6) !important;
+}
+
+.ranch-currency-pill > span:first-child {
+  display: grid !important;
+  width: 3.15rem !important;
+  height: 3.15rem !important;
+  place-items: center !important;
+  border-radius: 0.75rem !important;
+  background: rgba(255, 247, 205, 0.9) !important;
+  box-shadow: inset 0 0 0 2px rgba(226, 190, 103, 0.38) !important;
+  font-size: 1.45rem !important;
+}
+
+.ranch-currency-pill > span:first-child img {
+  width: 2.1rem !important;
+  height: 2.1rem !important;
+  object-fit: contain !important;
+}
+
+.ranch-currency-plus {
+  width: 1.55rem !important;
+  height: 1.55rem !important;
+  background: #75a843 !important;
+  color: white !important;
+  font-size: 1rem !important;
+}
+
+/* Ranch top profile restore + profile modal redesign. */
+.ranch-profile-cluster {
+  align-items: center !important;
+  gap: 0.55rem !important;
+}
+
+.ranch-profile-card {
+  width: min(18.2rem, 58vw) !important;
+  min-height: 2.9rem !important;
+  gap: 0.55rem !important;
+  overflow: hidden !important;
+  border: 2px solid rgba(42, 38, 32, 0.12) !important;
+  border-radius: 0.9rem !important;
+  background: rgba(255, 250, 236, 0.92) !important;
+  padding: 0.35rem 0.65rem 0.35rem 0.45rem !important;
+  box-shadow: 0 8px 20px rgba(35, 28, 18, 0.12) !important;
+  backdrop-filter: blur(4px) !important;
+}
+
+.ranch-profile-card::before,
+.ranch-profile-card::after {
+  content: none !important;
+}
+
+.ranch-profile-card > .ranch-profile-avatar {
+  width: 2.65rem !important;
+  height: 2.65rem !important;
+  padding: 0.15rem !important;
+  border: 0 !important;
+  border-radius: 0.75rem !important;
+  background: linear-gradient(180deg, #fff7dc, #dff2bf) !important;
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.78) !important;
+}
+
+.ranch-profile-card .text-sm {
+  font-size: 0.875rem !important;
+  line-height: 1.25rem !important;
+}
+
+.ranch-profile-card .text-\[9px\] {
+  font-size: 9px !important;
+}
+
+.ranch-profile-card .h-1\.5 {
+  height: 0.375rem !important;
+}
+
+.ranch-profile-card .text-\[9px\].tabular-nums {
+  font-size: 9px !important;
+}
+
+.ranch-currency-pill {
+  min-height: 2.45rem !important;
+  align-self: center !important;
+  gap: 0.35rem !important;
+  border: 2px solid rgba(42, 38, 32, 0.16) !important;
+  border-radius: 999px !important;
+  background: rgba(255, 250, 236, 0.92) !important;
+  padding: 0.35rem 0.55rem 0.35rem 0.75rem !important;
+  color: #2a2620 !important;
+  font-size: 0.86rem !important;
+  box-shadow: 0 8px 18px rgba(35, 28, 18, 0.12) !important;
+}
+
+.ranch-currency-pill > span:first-child {
+  width: auto !important;
+  height: auto !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.ranch-currency-pill > span:first-child img {
+  width: 1.1rem !important;
+  height: 1.1rem !important;
+}
+
+.ranch-currency-plus {
+  width: 1.05rem !important;
+  height: 1.05rem !important;
+  font-size: 0.72rem !important;
+}
+
+.ranch-profile-modal {
+  width: min(52rem, 94vw);
+  border: 3px solid rgba(255, 255, 255, 0.82);
+  border-radius: 2rem;
+  background:
+    radial-gradient(circle at 12% 0%, rgba(190, 221, 100, 0.2), transparent 22%),
+    linear-gradient(180deg, rgba(255, 252, 238, 0.98), rgba(248, 241, 218, 0.98));
+  padding: 2rem;
+  box-shadow:
+    0 24px 80px rgba(10, 20, 8, 0.42),
+    inset 0 0 0 2px rgba(236, 207, 143, 0.18);
+}
+
+.ranch-profile-modal::before {
+  content: "";
+  position: absolute;
+  inset: 0.7rem;
+  pointer-events: none;
+  border: 1.5px dashed rgba(183, 149, 75, 0.3);
+  border-radius: 1.55rem;
+}
+
+.ranch-profile-modal .ranch-modal-close {
+  right: 1.15rem;
+  top: 1.15rem;
+  width: 2.7rem;
+  height: 2.7rem;
+  background: rgba(82, 69, 48, 0.14);
+  color: #4a3524;
+  font-size: 1.8rem;
+}
+
+.ranch-profile-modal-hero {
+  position: relative;
+  /* .ranch-profile-modal-stats(아래 통계 칸)와 z-index가 똑같이 1이면 DOM 순서상 더 뒤에 있는
+     stats가 동점 승리로 항상 위에 그려진다 — 그러면 여기(hero) 안에 있는 대표 캐릭터/칭호
+     선택 드롭다운이 자기 z-index(20)와 상관없이 stats에 가려져 클릭이 안 된다. hero 쪽을
+     더 높여서 드롭다운이 항상 위로 오게 한다. */
+  z-index: 2;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.ranch-profile-modal .ranch-profile-modal-avatar {
+  width: 8.2rem;
+  height: 8.2rem;
+  border: 2px solid rgba(205, 171, 92, 0.55);
+  border-radius: 1.45rem;
+  background:
+    radial-gradient(circle at 50% 55%, rgba(224, 245, 145, 0.98), rgba(251, 246, 202, 0.95) 62%, rgba(238, 224, 171, 0.94));
+  box-shadow:
+    inset 0 0 0 4px rgba(255, 255, 255, 0.72),
+    0 14px 24px rgba(88, 63, 28, 0.22);
+}
+
+.ranch-profile-modal-info {
+  min-width: 0;
+}
+
+.ranch-profile-modal-rank {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  color: #4f7f32;
+  font-size: 1rem;
+  font-weight: 1000;
+  letter-spacing: 0.24em;
+}
+
+.ranch-profile-modal-rank::before,
+.ranch-profile-modal-rank::after {
+  content: "";
+  width: 0.7rem;
+  height: 0.46rem;
+  border-radius: 100% 0;
+  background: #77aa43;
+  transform: rotate(26deg);
+}
+
+.ranch-profile-modal-name-row {
+  margin-top: 0.35rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.ranch-profile-modal-name-row h2 {
+  font-size: clamp(2.4rem, 6vw, 4.4rem);
+  line-height: 0.95;
+  text-shadow: 0 3px 0 rgba(101, 72, 36, 0.18);
+}
+
+.ranch-profile-modal-subtitle {
+  margin-top: 0.35rem;
+  color: rgba(74, 53, 36, 0.78);
+  font-size: 1.45rem;
+  font-weight: 1000;
+}
+
+.ranch-profile-modal-badge {
+  display: inline-flex;
+  max-width: 11rem;
+  align-items: center;
+  gap: 0.6rem;
+  border: 2px solid rgba(197, 155, 84, 0.48);
+  border-radius: 999px;
+  background: rgba(255, 247, 220, 0.9);
+  padding: 0.5rem 0.9rem 0.5rem 0.5rem;
+  color: #3a2b1f;
+  font-size: 1rem;
+  font-weight: 800;
+  box-shadow: 0 8px 18px rgba(88, 63, 28, 0.16), inset 0 2px 0 rgba(255, 255, 255, 0.76);
+}
+
+.ranch-profile-modal-badge img {
+  width: 2.4rem;
+  height: 2.4rem;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.ranch-profile-modal-badge span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ranch-profile-modal-stats {
+  position: relative;
+  z-index: 1;
+  margin-top: 1.8rem;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.ranch-profile-modal .ranch-stat-tile {
+  min-height: 6.5rem;
+  border: 1.5px dashed rgba(153, 176, 86, 0.38);
+  border-radius: 1.3rem;
+  background:
+    radial-gradient(circle at 88% 82%, rgba(150, 190, 77, 0.25), transparent 23%),
+    rgba(229, 237, 211, 0.86);
+  padding: 1.05rem 1.2rem;
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.58);
+}
+
+.ranch-profile-modal .ranch-stat-tile span {
+  color: rgba(78, 64, 45, 0.72);
+  font-size: 1.05rem;
+}
+
+.ranch-profile-modal .ranch-stat-tile strong {
+  margin-top: 0.1rem;
+  color: #30271f;
+  font-size: 2rem;
+}
+
+@media (max-width: 640px) {
+  .ranch-profile-modal {
+    padding: 1.45rem;
+  }
+
+  .ranch-profile-modal-hero {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .ranch-profile-modal-badge {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+
+  .ranch-profile-modal .ranch-profile-modal-avatar {
+    width: 5.5rem;
+    height: 5.5rem;
+  }
+
+  .ranch-profile-modal-stats {
+    gap: 0.7rem;
+  }
+
+  .ranch-profile-modal .ranch-stat-tile {
+    min-height: 5.1rem;
+    padding: 0.85rem;
+  }
+}
+
+/* Profile sizing correction: keep ranch HUD compact, make only the modal a readable detail card. */
+.ranch-profile-cluster {
+  gap: 0.32rem !important;
+}
+
+.ranch-profile-card {
+  width: min(13.8rem, 44vw) !important;
+  min-height: 2.62rem !important;
+  padding: 0.28rem 0.48rem 0.28rem 0.36rem !important;
+}
+
+.ranch-profile-card > .ranch-profile-avatar {
+  width: 2.28rem !important;
+  height: 2.28rem !important;
+}
+
+.ranch-profile-card .text-sm {
+  font-size: 0.82rem !important;
+}
+
+.ranch-profile-card .h-1\.5 {
+  height: 0.32rem !important;
+}
+
+.ranch-currency-pill {
+  min-height: 2.55rem !important;
+  padding: 0.32rem 0.48rem !important;
+  gap: 0.25rem !important;
+  font-size: 0.82rem !important;
+}
+
+.ranch-currency-pill > span:first-child img {
+  width: 1rem !important;
+  height: 1rem !important;
+}
+
+.ranch-profile-modal {
+  width: min(42rem, 92vw) !important;
+  max-height: min(34rem, 86vh) !important;
+  overflow-y: auto !important;
+  border-radius: 1.55rem !important;
+  padding: 1.35rem 1.55rem 1.45rem !important;
+}
+
+.ranch-profile-modal::before {
+  inset: 0.55rem !important;
+  border-radius: 1.2rem !important;
+}
+
+.ranch-profile-modal .ranch-modal-close {
+  right: 0.85rem !important;
+  top: 0.85rem !important;
+  width: 2.25rem !important;
+  height: 2.25rem !important;
+  font-size: 1.55rem !important;
+}
+
+.ranch-profile-modal-hero {
+  gap: 1rem !important;
+  padding-right: 2.75rem;
+}
+
+.ranch-profile-modal .ranch-profile-modal-avatar {
+  width: 6.6rem !important;
+  height: 6.6rem !important;
+  border-radius: 1.18rem !important;
+}
+
+.ranch-profile-modal-rank {
+  font-size: 0.78rem !important;
+  gap: 0.45rem !important;
+}
+
+.ranch-profile-modal-name-row {
+  gap: 0.5rem !important;
+}
+
+.ranch-profile-modal-name-row h2 {
+  font-size: clamp(2rem, 5vw, 3.25rem) !important;
+}
+
+.ranch-profile-modal-subtitle {
+  font-size: 1.15rem !important;
+}
+
+.ranch-profile-modal-badge {
+  max-width: 13rem !important;
+  padding: 0.4rem 0.75rem 0.4rem 0.4rem !important;
+  gap: 0.45rem !important;
+  font-size: 0.85rem !important;
+}
+
+.ranch-profile-modal-badge img {
+  width: 2rem !important;
+  height: 2rem !important;
+}
+
+.ranch-profile-modal-stats {
+  margin-top: 1.15rem !important;
+  gap: 0.75rem !important;
+}
+
+.ranch-profile-modal .ranch-stat-tile {
+  min-height: 4.95rem !important;
+  border-radius: 1rem !important;
+  padding: 0.78rem 0.9rem !important;
+}
+
+.ranch-profile-modal .ranch-stat-tile span {
+  font-size: 0.88rem !important;
+}
+
+.ranch-profile-modal .ranch-stat-tile strong {
+  font-size: 1.55rem !important;
+}
+
+@media (max-width: 640px) {
+  .ranch-profile-card {
+    width: min(12rem, 48vw) !important;
+  }
+
+  .ranch-profile-modal {
+    max-height: 84vh !important;
+    padding: 1.1rem !important;
+  }
+
+  .ranch-profile-modal-hero {
+    padding-right: 2.1rem;
+  }
+
+  .ranch-profile-modal .ranch-profile-modal-avatar {
+    width: 4.8rem !important;
+    height: 4.8rem !important;
+  }
+
+  .ranch-profile-modal-name-row h2 {
+    font-size: 1.8rem !important;
+  }
+}
+
+/* Profile modal wood-frame finish. */
+.ranch-profile-modal {
+  width: min(39rem, 90vw) !important;
+  border: 0 !important;
+  border-radius: 1.42rem !important;
+  outline: 5px solid #9b6c33;
+  outline-offset: 0;
+  padding: 1.12rem 1.28rem 1.22rem !important;
+  background:
+    linear-gradient(90deg, rgba(104, 67, 29, 0.9), rgba(192, 139, 62, 0.98), rgba(111, 72, 31, 0.92)),
+    radial-gradient(circle at 12% 0%, rgba(190, 221, 100, 0.2), transparent 22%),
+    linear-gradient(180deg, rgba(255, 252, 238, 0.99), rgba(248, 241, 218, 0.99)) !important;
+  background-blend-mode: normal;
+  box-shadow:
+    0 4px 0 #67451f,
+    0 22px 70px rgba(10, 20, 8, 0.42),
+    inset 0 0 0 6px rgba(255, 248, 220, 0.94),
+    inset 0 0 0 10px rgba(159, 101, 39, 0.24) !important;
+}
+
+.ranch-profile-modal::before {
+  inset: 0.68rem !important;
+  z-index: 0;
+  border-color: rgba(139, 93, 39, 0.38) !important;
+  border-radius: 1rem !important;
+}
+
+.ranch-profile-modal::after {
+  content: "";
+  position: absolute;
+  inset: -0.18rem;
+  z-index: 0;
+  pointer-events: none;
+  border-radius: 1.55rem;
+  background:
+    linear-gradient(90deg, transparent 0 13%, rgba(255, 231, 162, 0.22) 13.5% 14%, transparent 14.5% 30%, rgba(80, 50, 22, 0.2) 30.5% 31%, transparent 31.5% 49%, rgba(255, 231, 162, 0.18) 49.5% 50%, transparent 50.5% 67%, rgba(80, 50, 22, 0.2) 67.5% 68%, transparent 68.5% 84%, rgba(255, 231, 162, 0.2) 84.5% 85%, transparent 85.5% 100%);
+  opacity: 0.55;
+}
+
+.ranch-profile-modal .ranch-modal-close {
+  right: 0.82rem !important;
+  top: 0.82rem !important;
+  z-index: 3;
+  width: 1.95rem !important;
+  height: 1.95rem !important;
+  border: 2px solid rgba(116, 75, 31, 0.42);
+  background:
+    radial-gradient(circle at 35% 28%, rgba(255, 245, 205, 0.96), transparent 34%),
+    linear-gradient(180deg, #ecd49b, #b77a37) !important;
+  color: #58361c !important;
+  font-size: 1.28rem !important;
+  line-height: 1;
+  box-shadow:
+    0 3px 0 rgba(85, 52, 21, 0.58),
+    0 8px 14px rgba(58, 38, 18, 0.22),
+    inset 0 0 0 2px rgba(255, 248, 218, 0.58);
+  text-shadow: 0 1px 0 rgba(255, 245, 205, 0.65);
+}
+
+.ranch-profile-modal .ranch-modal-close:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.04);
+}
+
+.ranch-profile-modal .ranch-modal-close:active {
+  transform: translateY(1px);
+  box-shadow:
+    0 1px 0 rgba(85, 52, 21, 0.58),
+    0 5px 10px rgba(58, 38, 18, 0.18),
+    inset 0 0 0 2px rgba(255, 248, 218, 0.58);
+}
+
+/* Explorer helper: transparent mascot + supplied text-logo image. */
+.ranch-egg-help {
+  width: clamp(6.8rem, 8vw, 8.4rem) !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  gap: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  overflow: visible !important;
+}
+
+.ranch-egg-help__face {
+  width: clamp(5.9rem, 7.2vw, 7.55rem) !important;
+  height: clamp(5.9rem, 7.2vw, 7.55rem) !important;
+  margin: -0.28rem 0 -0.45rem !important;
+  object-fit: contain !important;
+  object-position: center !important;
+  background: transparent !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  filter: drop-shadow(0 8px 12px rgba(32, 52, 18, 0.28)) !important;
+  transform: none !important;
+}
+
+.ranch-egg-help__label {
+  display: none !important;
+}
+
+.ranch-egg-help__label-image {
+  display: block;
+  width: clamp(7.4rem, 8.8vw, 9.5rem);
+  max-width: none;
+  height: auto;
+  margin-top: -0.15rem;
+  object-fit: contain;
+  filter: drop-shadow(0 5px 7px rgba(38, 25, 12, 0.28));
+  pointer-events: none;
+}
+
+/* Ranch top HUD visual finish: match the soft outlined helper-logo mood while keeping size/layout. */
+.ranch-profile-card {
+  border: 3px solid rgba(255, 250, 225, 0.96) !important;
+  background:
+    linear-gradient(180deg, rgba(255, 253, 238, 0.96), rgba(239, 245, 218, 0.94)) !important;
+  box-shadow:
+    0 0 0 2px rgba(122, 88, 42, 0.22),
+    0 5px 0 rgba(92, 61, 29, 0.22),
+    0 13px 24px rgba(24, 37, 13, 0.24),
+    inset 0 2px 0 rgba(255, 255, 255, 0.82) !important;
+}
+
+.ranch-profile-card > .ranch-profile-avatar {
+  border: 2px solid rgba(255, 250, 225, 0.98) !important;
+  background:
+    radial-gradient(circle at 52% 44%, rgba(237, 252, 161, 0.9), rgba(249, 242, 193, 0.94) 58%, rgba(216, 235, 160, 0.9)) !important;
+  box-shadow:
+    0 0 0 1.5px rgba(122, 88, 42, 0.16),
+    inset 0 2px 0 rgba(255, 255, 255, 0.78),
+    0 5px 10px rgba(57, 81, 31, 0.18) !important;
+}
+
+.ranch-profile-card .text-sm {
+  color: #3a2b1f !important;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.ranch-profile-card .h-1\.5 {
+  background: rgba(221, 236, 183, 0.95) !important;
+  box-shadow: inset 0 1px 2px rgba(95, 123, 55, 0.12);
+}
+
+.ranch-profile-card .h-1\.5 > span {
+  background: linear-gradient(90deg, #cbe87f, #93c95d) !important;
+  box-shadow: 0 0 8px rgba(140, 190, 82, 0.26);
+}
+
+.ranch-currency-pill {
+  border: 3px solid rgba(255, 250, 225, 0.96) !important;
+  background:
+    linear-gradient(180deg, rgba(255, 253, 238, 0.96), rgba(239, 245, 218, 0.94)) !important;
+  box-shadow:
+    0 0 0 2px rgba(122, 88, 42, 0.22),
+    0 5px 0 rgba(92, 61, 29, 0.22),
+    0 13px 24px rgba(24, 37, 13, 0.22),
+    inset 0 2px 0 rgba(255, 255, 255, 0.82) !important;
+}
+
+.ranch-currency-pill > span:first-child {
+  display: grid !important;
+  width: 1.65rem !important;
+  height: 1.65rem !important;
+  place-items: center !important;
+  border-radius: 999px !important;
+  background: radial-gradient(circle at 45% 35%, #f6ffc7, #a9d66b 72%) !important;
+  box-shadow:
+    0 0 0 2px rgba(255, 250, 225, 0.95),
+    0 0 0 3px rgba(122, 88, 42, 0.16),
+    inset 0 2px 0 rgba(255, 255, 255, 0.58) !important;
+}
+
+.ranch-currency-pill > span:first-child img {
+  width: 1.05rem !important;
+  height: 1.05rem !important;
+}
+
+.ranch-currency-plus {
+  background: linear-gradient(180deg, #82bd4d, #5a9f4b) !important;
+  box-shadow:
+    0 0 0 2px rgba(255, 250, 225, 0.96),
+    0 3px 5px rgba(48, 78, 31, 0.28) !important;
+}
+
+.ranch-top-icon-button[aria-label="설정"] img {
+  width: 62px !important;
+  height: 62px !important;
 }

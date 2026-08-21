@@ -21,6 +21,7 @@ export default function GachaModal({ cost = 200 }) {
   const [confettiKey, setConfettiKey] = useState(0)
   const [sparkles, setSparkles] = useState([])
   const [pullsToday, setPullsToday] = useState(0)
+  const [noticeModal, setNoticeModal] = useState(null)
 
   const POOL = mockShopItems.item.filter((i) => i.category === 'interior')
 
@@ -38,11 +39,17 @@ export default function GachaModal({ cost = 200 }) {
   async function handlePull() {
     if (stage !== 'idle') return
     if (pullsToday >= MAX_DAILY_PULLS) {
-      alert(`오늘은 ${MAX_DAILY_PULLS}회까지만 뽑을 수 있어요.`)
+      setNoticeModal({
+        title: '오늘의 뽑기를 모두 사용했어요',
+        description: `오늘은 ${MAX_DAILY_PULLS}회까지만 뽑을 수 있어요. 내일 다시 찾아와 주세요.`,
+      })
       return
     }
     if (leaves < cost) {
-      alert('나뭇잎이 부족해요.')
+      setNoticeModal({
+        title: '나뭇잎이 부족합니다',
+        description: `뽑기에는 나뭇잎 ${cost}개가 필요해요. 미션과 탐험으로 나뭇잎을 더 모아보세요.`,
+      })
       return
     }
 
@@ -80,12 +87,12 @@ export default function GachaModal({ cost = 200 }) {
     setPopReady(false)
   }
 
-  const pullDisabled = stage !== 'idle' || pullsToday >= MAX_DAILY_PULLS || leaves < cost
+  const pullDisabled = stage !== 'idle'
 
   return (
-    <div className="rounded-xl border border-dashed border-ivory-200 bg-white/60 p-6 text-center">
-      <p className="mb-2 font-semibold text-ink-900">숲의 보물 상자</p>
-      <p className="mb-4 text-sm text-ink-700/80">
+    <div className="gacha-panel rounded-xl border border-dashed border-ivory-200 p-6 text-center">
+      <p className="mb-2 font-black text-ink-900">숲의 보물 상자</p>
+      <p className="gacha-panel-copy mb-4 text-sm">
         게임 내 나뭇잎으로만 이용되는 안전한 뽑기예요. 모든 아이템은 동일한 확률로 뽑혀요.
         <br />
         오늘 {pullsToday}/{MAX_DAILY_PULLS}회 뽑았어요.
@@ -98,7 +105,7 @@ export default function GachaModal({ cost = 200 }) {
             animate={stage === 'shake' ? { rotate: [0, -5, 5, -3, 3, 0], scale: [1, 1.02, 0.98, 1] } : { rotate: 0, scale: 1 }}
             transition={{ duration: 0.7 }}
           >
-            <img src="/gacha/뽑기 기계-2.png" alt="뽑기 기계" className="chest-img" />
+            <img src="/gacha/뽑기 기계-2-trimmed.png" alt="뽑기 기계" className="chest-img" />
           </motion.div>
 
           <AnimatePresence>
@@ -158,7 +165,10 @@ export default function GachaModal({ cost = 200 }) {
             className="chest-action-button"
             aria-label="뽑기 기계 돌리기"
           >
-            <span>🍃 {cost}</span>
+            <span className="inline-flex items-center justify-center gap-1.5">
+              <img src="/ui/leaf.png" alt="" aria-hidden="true" className="gacha-leaf-icon" />
+              {cost}개
+            </span>
           </button>
         )}
 
@@ -203,6 +213,14 @@ export default function GachaModal({ cost = 200 }) {
         title={result ? `획득: ${result.name}` : ''}
         description={result ? `${result.name}이(가) 가방에 담겼어요.` : ''}
         onConfirm={exitReveal}
+      />
+      <ResultModal
+        open={Boolean(noticeModal)}
+        imageSrc="/ui/leaf.png"
+        title={noticeModal?.title ?? ''}
+        description={noticeModal?.description ?? ''}
+        confirmLabel="확인"
+        onConfirm={() => setNoticeModal(null)}
       />
     </div>
   )

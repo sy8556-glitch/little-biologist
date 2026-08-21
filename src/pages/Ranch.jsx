@@ -63,13 +63,13 @@ function WeatherBadge({ weather, visible, onToggle }) {
 }
 
 const RANCH_SIDE_NAV_ITEMS = [
-  { to: '/exploration', label: '탐험', iconSrc: '/ui/explore.png' },
-  { to: '/field-guide', label: '도감', iconSrc: '/ui/guide.png' },
-  { to: '/friends', label: '소셜', iconSrc: '/ui/social.png' },
-  { to: '/bag', label: '가방', iconSrc: '/ui/bag.png' },
-  { to: '/quests', label: '미션', iconSrc: '/ui/mission.png', hasBadge: true },
-  { to: '/shop', label: '상점', iconSrc: '/ui/shop.png' },
-  { to: '/quiz', label: '퀴즈', iconSrc: '/ui/quiz.png' },
+  { to: '/exploration', label: '탐험', iconSrc: '/ui/explore-trimmed.png' },
+  { to: '/field-guide', label: '도감', iconSrc: '/ui/guide-trimmed.png' },
+  { to: '/friends', label: '소셜', iconSrc: '/ui/social-trimmed.png' },
+  { to: '/bag', label: '가방', iconSrc: '/ui/bag-trimmed.png' },
+  { to: '/quests', label: '미션', iconSrc: '/ui/mission-trimmed.png', hasBadge: true },
+  { to: '/shop', label: '상점', iconSrc: '/ui/shop-trimmed.png' },
+  { to: '/quiz', label: '퀴즈', iconSrc: '/ui/quiz-trimmed.png' },
 ]
 
 // ranch.md: 최초 사용자 튜토리얼, 도움말로 재실행, 서식지별 등록 현황, 인테리어 배치 진입.
@@ -78,6 +78,7 @@ const RANCH_SIDE_NAV_ITEMS = [
 const HABITAT_POSITIONS_KEY = 'habitatPositions'
 const HABITAT_SCALES_KEY = 'habitatScales'
 const PRIMARY_TITLE_KEY = 'primaryTitleId'
+const PRIMARY_BADGE_KEY = 'primaryBadgeId'
 
 export default function Ranch() {
   const location = useLocation()
@@ -102,14 +103,20 @@ export default function Ranch() {
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false)
   const [equippedTitleIds, setEquippedTitleIds] = useState([])
   const [primaryTitleId, setPrimaryTitleId] = useState(null)
+  const [equippedBadgeIds, setEquippedBadgeIds] = useState([])
+  const [primaryBadgeId, setPrimaryBadgeId] = useState(null)
   const [isCharacterPickerOpen, setIsCharacterPickerOpen] = useState(false)
   const [isTitlePickerOpen, setIsTitlePickerOpen] = useState(false)
+  const [isBadgePickerOpen, setIsBadgePickerOpen] = useState(false)
   const [isMissionModalOpen, setIsMissionModalOpen] = useState(false)
   const [isAnnouncementOpen, setIsAnnouncementOpen] = useState(false)
   const [isGuestbookModalOpen, setIsGuestbookModalOpen] = useState(false)
   const [guestbookEntries, setGuestbookEntries] = useState([])
   const [isGuestbookLoading, setIsGuestbookLoading] = useState(false)
   const [isQuizExhaustedModalOpen, setIsQuizExhaustedModalOpen] = useState(false)
+  // 알 획득 연출(EggFirstRevealEffect)이 떠 있는 동안엔 튜토리얼/편집/방명록 버튼 등이 겹쳐
+  // 뜨지 않도록 숨긴다 — EggFirstRevealEffect의 onActiveChange로 갱신된다.
+  const [isEggGrantFlowActive, setIsEggGrantFlowActive] = useState(false)
   const [editTarget, setEditTarget] = useState('habitat')
   const [selectedHabitatId, setSelectedHabitatId] = useState(HABITATS[0].id)
   const [selectedPlacementId, setSelectedPlacementId] = useState(null)
@@ -127,7 +134,7 @@ export default function Ranch() {
   const weatherCoordsRef = useRef(DEFAULT_LOCATION)
 
   function handleSideNavigation(item) {
-    if (item.to === '/quiz' && isQuizCompletedToday()) {
+    if (item.to === '/quiz' && isQuizCompletedToday(user?.uid)) {
       setIsQuizExhaustedModalOpen(true)
       return
     }
@@ -191,6 +198,8 @@ export default function Ranch() {
       if (state[HABITAT_SCALES_KEY]) setHabitatScales({ ...defaultScales, ...state[HABITAT_SCALES_KEY] })
       setEquippedTitleIds(Array.isArray(state.equippedTitles) ? state.equippedTitles : [])
       setPrimaryTitleId(typeof state[PRIMARY_TITLE_KEY] === 'string' ? state[PRIMARY_TITLE_KEY] : null)
+      setEquippedBadgeIds(Array.isArray(state.equippedBadges) ? state.equippedBadges : [])
+      setPrimaryBadgeId(typeof state[PRIMARY_BADGE_KEY] === 'string' ? state[PRIMARY_BADGE_KEY] : null)
     })
     return () => {
       cancelled = true
@@ -267,6 +276,12 @@ export default function Ranch() {
   const interiorBagItems = bagItems.filter((item) => item.category === 'interior')
   // 배치 칸 30개는 목장에 놓인 개수가 아니라 가방에 보유한 인테리어 "종류" 수 기준이다.
   const interiorSlotsFull = interiorBagItems.length >= bagCapacity
+  // 알 획득 연출 또는 튜토리얼이 떠 있는 동안엔 편집/방명록/랜덤곤충 이펙트 등 다른 오버레이를 숨긴다.
+  // 단, 가방 "목장에 배치"로 들어온 편집 흐름(viaPlacementEntry)은 예외다 — 마지막(bag) 튜토리얼
+  // 단계가 안내하는 행동 자체가 이 편집 UI(크기 조절·가방에 넣기·완료)를 만지는 것이라, 여기서
+  // 숨겨버리면 정작 안내대로 따라 할 수가 없다.
+  const isEntryModalActive = isEggGrantFlowActive || (Boolean(step) && !viaPlacementEntry)
+  const shouldShowRandomInsectEffect = !isEggGrantFlowActive && (!step || step.id === 'random-insect')
 
   function handlePlaceFromTray(itemId) {
     const instanceId = placeItem(itemId)
@@ -315,6 +330,16 @@ export default function Ranch() {
     if (user?.uid) saveUserState(user.uid, PRIMARY_TITLE_KEY, id)
   }
 
+  // 대표 배지도 대표 칭호와 같은 방식 — 프로필에서 장착해 둔(최대 5개) 배지 중 하나를 여기서 대표로 고른다.
+  const equippedBadgeOptions = quests.achievement.filter((quest) => quest.claimed && equippedBadgeIds.includes(quest.id))
+  const selectedBadge = equippedBadgeOptions.find((b) => b.id === primaryBadgeId) ?? equippedBadgeOptions[0] ?? null
+
+  function selectPrimaryBadge(id) {
+    setPrimaryBadgeId(id)
+    setIsBadgePickerOpen(false)
+    if (user?.uid) saveUserState(user.uid, PRIMARY_BADGE_KEY, id)
+  }
+
   return (
     <MainLayout showHeader={false} showBottomNav={false}>
       <div className="relative h-screen min-h-0 overflow-hidden bg-ink-950">
@@ -351,11 +376,15 @@ export default function Ranch() {
             onPositionChange={updatePlacementPosition}
           />
 
-          {!isEditing && <RandomInsectEffect />}
-          <EggFirstRevealEffect trigger={location.state?.firstLogin} representativeCharacter={representativeCharacter} />
+          {!isEditing && shouldShowRandomInsectEffect && <RandomInsectEffect />}
+          <EggFirstRevealEffect
+            trigger={location.state?.firstLogin}
+            representativeCharacter={representativeCharacter}
+            onActiveChange={setIsEggGrantFlowActive}
+          />
         </RanchCamera>
 
-        {isEditing && editTarget === 'habitat' && !viaPlacementEntry && (
+        {isEditing && !isEntryModalActive && editTarget === 'habitat' && !viaPlacementEntry && (
           <div className="absolute inset-x-3 bottom-20 z-10 flex justify-center">
             <div className="flex w-full max-w-sm items-center gap-3 rounded-2xl bg-ink-900/85 px-4 py-2 text-xs font-semibold text-white shadow-card backdrop-blur-sm">
               <span className="shrink-0">{selectedHabitat.name} 크기</span>
@@ -374,7 +403,7 @@ export default function Ranch() {
           </div>
         )}
 
-        {isEditing && editTarget === 'placement' && selectedPlacement && (
+        {isEditing && !isEntryModalActive && editTarget === 'placement' && selectedPlacement && (
           <div className="absolute inset-x-3 bottom-20 z-10 flex justify-center">
             <div className="flex w-full max-w-sm items-center gap-3 rounded-2xl bg-ink-900/85 px-4 py-2 text-xs font-semibold text-white shadow-card backdrop-blur-sm">
               <span className="shrink-0">{selectedPlacement.name} 크기</span>
@@ -395,24 +424,37 @@ export default function Ranch() {
                   retrieveInstance(selectedPlacement.id)
                   setSelectedPlacementId(null)
                 }}
-                className="shrink-0 rounded-full bg-white/15 px-3 py-1 hover:bg-white/25"
+                className="flex shrink-0 items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 hover:bg-white/25"
               >
-                🎒 가방에 넣기
+                <img className="h-8 w-8 scale-125 object-contain" src="/ui/bag-trimmed.png" alt="" aria-hidden="true" />
+                가방에 넣기
               </button>
             </div>
           </div>
         )}
 
-        {!isEditing && (
+        {isEditing && !isEntryModalActive && (
+          <button
+            type="button"
+            onClick={() => {
+              setIsEditing(false)
+              setViaPlacementEntry(false)
+            }}
+            className="ranch-edit-complete-button"
+          >
+            완료
+          </button>
+        )}
+
+        {!isEditing && !isEntryModalActive && (
           <>
-            {/* 상단: 탐험가 프로필 + 재화 + 알림/설정 (목장 이미지 위 오버레이) */}
+            {/* 상단: 탐험가 프로필(닉네임 옆에 대표 칭호·배지) + 알림/설정 (목장 이미지 위 오버레이) */}
             <div className="pointer-events-none absolute inset-x-3 top-3 z-20 flex items-start justify-between gap-3">
               <div className="ranch-profile-cluster pointer-events-auto">
                 <button
                   type="button"
                   onClick={() => setIsProfileModalOpen(true)}
                   className="ranch-profile-card"
-                  style={{ transform: 'scale(0.7) translateY(-6px)', transformOrigin: 'left center' }}
                 >
                   <img
                     className="ranch-profile-avatar"
@@ -421,7 +463,20 @@ export default function Ranch() {
                     aria-hidden="true"
                   />
                   <span className="flex min-w-0 flex-1 flex-col gap-1 text-left">
-                    <span className="block text-sm font-black text-ink-900">{user?.nickname}</span>
+                    <span className="flex min-w-0 items-center gap-1">
+                      <span className="min-w-0 shrink truncate text-sm font-black text-ink-900">{user?.nickname}</span>
+                      {selectedTitle && (
+                        <span className="min-w-0 shrink truncate text-[10px] font-bold text-ink-700/60">{selectedTitle.title}</span>
+                      )}
+                      {selectedBadge && (
+                        <img
+                          src={selectedBadge.badgeImage}
+                          alt=""
+                          aria-hidden="true"
+                          className="h-6 w-6 shrink-0 rounded-full bg-white object-contain p-0.5 ring-1 ring-leaf-200"
+                        />
+                      )}
+                    </span>
                     <span className="flex items-center gap-1.5" aria-label={`성장 포인트 ${growthPoints}/${GROWTH_MAX}`}>
                       <span className="h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-leaf-100">
                         <span
@@ -436,17 +491,6 @@ export default function Ranch() {
                     </span>
                   </span>
                 </button>
-                <button
-                  type="button"
-                  onClick={() => navigate('/shop')}
-                  className="ranch-currency-pill"
-                  aria-label="상점으로 이동"
-                  style={{ transform: 'scale(0.7) translateY(-10px)', transformOrigin: 'left center' }}
-                >
-                  <span aria-hidden="true">🍃</span>
-                  <span>{leaves.toLocaleString()}</span>
-                  <span className="ranch-currency-plus" aria-hidden="true">+</span>
-                </button>
               </div>
 
               <div className="ranch-top-tools pointer-events-auto">
@@ -455,18 +499,16 @@ export default function Ranch() {
                   onClick={() => setIsAnnouncementOpen(true)}
                   className="ranch-top-icon-button"
                   aria-label="알림"
-                  style={{ transform: 'translateY(-6px)' }}
                 >
-                  <img src="/ui/alarm.png" alt="" aria-hidden="true" />
+                  <img src="/ui/alarm-icon-sq.png" alt="" aria-hidden="true" />
                 </button>
                 <button
                   type="button"
                   onClick={() => navigate('/profile/edit')}
                   className="ranch-top-icon-button"
                   aria-label="설정"
-                  style={{ transform: 'translateY(-6px)' }}
                 >
-                  <img src="/ui/settings.png" alt="" aria-hidden="true" />
+                  <img src="/ui/settings-icon-v3.png" alt="" aria-hidden="true" />
                 </button>
               </div>
             </div>
@@ -483,10 +525,13 @@ export default function Ranch() {
         )}
 
         {/* 가방에서 "목장에 배치"로 들어온 경우: 가방 인테리어를 바로 꺼내 놓을 수 있는 트레이. */}
-        {isEditing && viaPlacementEntry && (
+        {isEditing && !isEntryModalActive && viaPlacementEntry && (
           <div className="absolute left-3 top-3 flex w-64 max-w-[72vw] flex-col gap-2 rounded-xl bg-white/95 p-4 shadow-card backdrop-blur-sm">
             <div className="mb-1 flex items-center justify-between">
-              <p className="text-sm font-semibold text-ink-900">🎒 인테리어 꺼내기</p>
+              <p className="flex items-center gap-1.5 text-sm font-semibold text-ink-900">
+                <img className="h-8 w-8 scale-125 object-contain" src="/ui/bag-trimmed.png" alt="" aria-hidden="true" />
+                인테리어 꺼내기
+              </p>
               <span className="text-xs text-ink-700/60 tabular-nums">
                 {interiorBagItems.length}/{bagCapacity}
               </span>
@@ -528,7 +573,7 @@ export default function Ranch() {
         )}
 
         {/* 우측 상단: 편집 버튼 — 편집 중에도 계속 필요해서 항상 남긴다 */}
-        <div className="absolute right-4 top-36 z-40 flex flex-col flex-wrap gap-2">
+        <div className={`absolute right-1 top-[9rem] z-50 flex flex-col items-end gap-[-2.25rem] transition-opacity ${isEntryModalActive || isEditing ? 'pointer-events-none opacity-0' : ''}`}>
           <button
             type="button"
             onClick={() => {
@@ -536,23 +581,19 @@ export default function Ranch() {
               setIsEditing((editing) => !editing)
             }}
             className={`ranch-edit-button ${isEditing ? 'ranch-edit-button--active' : ''}`}
-            style={{ transform: 'scale(0.7)', transformOrigin: 'right center' }}
           >
-            <span aria-hidden="true">✎</span>
-            {isEditing ? '완료' : '편집'}
+            <img className="ranch-action-button__image ranch-action-button__image--edit" src="/ui/edit-action.png" alt={isEditing ? '완료' : '편집'} />
           </button>
           <button
             type="button"
             onClick={openGuestbook}
             className="ranch-edit-button"
-            style={{ transform: 'scale(0.7)', transformOrigin: 'right center' }}
           >
-            <span aria-hidden="true">📔</span>
-            방명록 보기
+            <img className="ranch-action-button__image ranch-action-button__image--guestbook" src="/ui/guestbook-action.png" alt="방명록 보기" />
           </button>
         </div>
 
-        {!isEditing && (
+        {!isEditing && !isEntryModalActive && (
           <>
             <button
               type="button"
@@ -568,7 +609,7 @@ export default function Ranch() {
                 alt=""
                 aria-hidden="true"
               />
-              <span className="ranch-egg-help__label">탐험도우미</span>
+              <img className="ranch-egg-help__label-image" src="/ui/explorer-helper-text.png" alt="탐험도우미" />
             </button>
 
             <div className="ranch-side-hud" aria-label="목장 바로가기">
@@ -604,11 +645,12 @@ export default function Ranch() {
               setIsProfileModalOpen(false)
               setIsCharacterPickerOpen(false)
               setIsTitlePickerOpen(false)
+              setIsBadgePickerOpen(false)
             }}
           >
             <div className="ranch-modal ranch-profile-modal" role="dialog" aria-modal="true" aria-label="탐험가 정보" onClick={(event) => event.stopPropagation()}>
               <button type="button" className="ranch-modal-close" onClick={() => setIsProfileModalOpen(false)} aria-label="닫기">×</button>
-              <div className="flex items-center gap-4">
+              <div className="ranch-profile-modal-hero">
                 <div className="relative">
                   <button
                     type="button"
@@ -617,6 +659,7 @@ export default function Ranch() {
                     onClick={() => {
                       setIsCharacterPickerOpen((open) => !open)
                       setIsTitlePickerOpen(false)
+                      setIsBadgePickerOpen(false)
                     }}
                   >
                     <img src={profileAvatarImage} alt="" className="h-full w-full object-contain p-1" />
@@ -646,47 +689,96 @@ export default function Ranch() {
                     </div>
                   )}
                 </div>
-                <div className="min-w-0">
-                  <p className="text-xs font-black uppercase tracking-[0.22em] text-leaf-700">Explorer</p>
-                  <h2 className="mt-1 text-2xl font-black text-ink-900">{user?.nickname}</h2>
-                  <div className="relative mt-0.5">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsTitlePickerOpen((open) => !open)
-                        setIsCharacterPickerOpen(false)
-                      }}
-                      className="text-sm font-bold text-ink-700/70 underline decoration-dotted underline-offset-2 hover:text-ink-900"
-                    >
-                      {selectedTitle ? selectedTitle.title : '칭호 선택'}
-                    </button>
-                    {isTitlePickerOpen && (
-                      <div className="absolute left-0 top-full z-20 mt-2 w-56 rounded-xl bg-white p-2 shadow-soft">
-                        <p className="mb-1 px-1 text-[11px] font-bold text-ink-700/60">대표 칭호 선택</p>
-                        {equippedTitleOptions.length === 0 ? (
-                          <p className="px-1 py-1 text-xs text-ink-700/60">프로필에서 먼저 칭호를 장착해 주세요.</p>
-                        ) : (
-                          <div className="flex flex-col gap-1">
-                            {equippedTitleOptions.map((titleQuest) => (
-                              <button
-                                key={titleQuest.id}
-                                type="button"
-                                onClick={() => selectPrimaryTitle(titleQuest.id)}
-                                className={`rounded-lg px-2 py-1.5 text-left text-xs font-semibold hover:bg-ivory-100 ${
-                                  selectedTitle?.id === titleQuest.id ? 'bg-leaf-50 text-leaf-700' : 'text-ink-900'
-                                }`}
-                              >
-                                {titleQuest.title}
-                              </button>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    )}
+                <div className="ranch-profile-modal-info">
+                  <p className="ranch-profile-modal-rank">EXPLORER</p>
+                  <div className="ranch-profile-modal-name-row">
+                    <h2>{user?.nickname}</h2>
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsTitlePickerOpen((open) => !open)
+                          setIsCharacterPickerOpen(false)
+                          setIsBadgePickerOpen(false)
+                        }}
+                        className="text-sm font-bold text-ink-700/70 underline decoration-dotted underline-offset-2 hover:text-ink-900"
+                      >
+                        {selectedTitle ? selectedTitle.title : '칭호 선택'}
+                      </button>
+                      {isTitlePickerOpen && (
+                        <div className="absolute left-0 top-full z-20 mt-2 w-56 rounded-xl bg-white p-2 shadow-soft">
+                          <p className="mb-1 px-1 text-[11px] font-bold text-ink-700/60">대표 칭호 선택</p>
+                          {equippedTitleOptions.length === 0 ? (
+                            <p className="px-1 py-1 text-xs text-ink-700/60">프로필에서 먼저 칭호를 장착해 주세요.</p>
+                          ) : (
+                            <div className="flex flex-col gap-1">
+                              {equippedTitleOptions.map((titleQuest) => (
+                                <button
+                                  key={titleQuest.id}
+                                  type="button"
+                                  onClick={() => selectPrimaryTitle(titleQuest.id)}
+                                  className={`rounded-lg px-2 py-1.5 text-left text-xs font-semibold hover:bg-ivory-100 ${
+                                    selectedTitle?.id === titleQuest.id ? 'bg-leaf-50 text-leaf-700' : 'text-ink-900'
+                                  }`}
+                                >
+                                  {titleQuest.title}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
+                  <p className="ranch-profile-modal-subtitle">자연 탐험가</p>
+                </div>
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsBadgePickerOpen((open) => !open)
+                      setIsCharacterPickerOpen(false)
+                      setIsTitlePickerOpen(false)
+                    }}
+                    className="ranch-profile-modal-badge"
+                    aria-label="대표 배지 선택"
+                  >
+                    {selectedBadge ? (
+                      <>
+                        <img src={selectedBadge.badgeImage} alt="" aria-hidden="true" />
+                        <span>{selectedBadge.badgeName}</span>
+                      </>
+                    ) : (
+                      <span>배지 선택</span>
+                    )}
+                  </button>
+                  {isBadgePickerOpen && (
+                    <div className="absolute right-0 top-full z-20 mt-2 w-56 rounded-xl bg-white p-2 shadow-soft">
+                      <p className="mb-1 px-1 text-[11px] font-bold text-ink-700/60">대표 배지 선택</p>
+                      {equippedBadgeOptions.length === 0 ? (
+                        <p className="px-1 py-1 text-xs text-ink-700/60">프로필에서 먼저 배지를 장착해 주세요.</p>
+                      ) : (
+                        <div className="flex flex-col gap-1">
+                          {equippedBadgeOptions.map((badge) => (
+                            <button
+                              key={badge.id}
+                              type="button"
+                              onClick={() => selectPrimaryBadge(badge.id)}
+                              className={`flex items-center gap-2 rounded-lg px-2 py-1.5 text-left text-xs font-semibold hover:bg-ivory-100 ${
+                                selectedBadge?.id === badge.id ? 'bg-leaf-50 text-leaf-700' : 'text-ink-900'
+                              }`}
+                            >
+                              <img src={badge.badgeImage} alt="" className="h-6 w-6 object-contain" />
+                              {badge.badgeName}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
-              <div className="mt-5 grid grid-cols-2 gap-3 text-sm">
+              <div className="ranch-profile-modal-stats">
                 <div className="ranch-stat-tile"><span>도감</span><strong>{fieldGuideCount}/{mockUser.fieldGuideTotal}</strong></div>
                 <div className="ranch-stat-tile"><span>성장 포인트</span><strong>{growthPoints}</strong></div>
                 <div className="ranch-stat-tile"><span>출석</span><strong>{user?.totalLoginDays ?? 0}일</strong></div>
@@ -698,7 +790,7 @@ export default function Ranch() {
 
         <ResultModal
           open={isQuizExhaustedModalOpen}
-          emoji="🌿"
+          imageSrc="/ui/quiz-exhausted.png"
           title="오늘의 퀴즈를 모두 풀었어요"
           description="오늘 가능한 퀴즈 횟수를 다 사용했어요. 내일 목장에서 다시 도전해 주세요!"
           confirmLabel="확인"
@@ -709,7 +801,12 @@ export default function Ranch() {
           <div className="ranch-modal-backdrop" role="presentation" onClick={() => setIsGuestbookModalOpen(false)}>
             <div className="ranch-modal" role="dialog" aria-modal="true" aria-label="방명록" onClick={(event) => event.stopPropagation()}>
               <button type="button" className="ranch-modal-close" onClick={() => setIsGuestbookModalOpen(false)} aria-label="닫기">×</button>
-              <h2 className="text-xl font-black text-ink-900">📔 방명록</h2>
+              <div className="ranch-guestbook-modal-logo" aria-label={`${user?.nickname || user?.username || user?.uid || '사용자'}의 방명록`}>
+                <span className="ranch-guestbook-modal-owner">
+                  {user?.nickname || user?.username || user?.uid || '사용자'}의
+                </span>
+                <img src="/ui/guestbook-action.png" alt="방명록" />
+              </div>
               {isGuestbookLoading ? (
                 <p className="mt-4 text-sm text-ink-700/60">불러오는 중...</p>
               ) : guestbookEntries.length === 0 ? (

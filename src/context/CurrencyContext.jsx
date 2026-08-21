@@ -16,6 +16,11 @@ export function CurrencyProvider({ children }) {
   const [growthPoints, setGrowthPoints] = useState(0)
   const [growthStage, setGrowthStage] = useState('egg')
   const [stageUp, setStageUp] = useState(null)
+  // 미션 보상 확인 팝업이나 랜덤 곤충 등장 연출처럼, 화면을 이미 차지하고 있는 다른 팝업이
+  // 있는 동안엔 부화/진화 연출이 그 위를 덮어버리지 않도록 이 카운트가 0보다 클 때는
+  // stageUp을 밖으로 내보내지 않는다. 그 팝업들이 "확인"으로 닫히거나(미션) 도감으로
+  // 이동한 뒤(랜덤 곤충) holdStageUp/releaseStageUp으로 이 값을 올리고 내린다.
+  const [stageUpHoldCount, setStageUpHoldCount] = useState(0)
 
   useEffect(() => {
     if (!user?.uid) return
@@ -67,8 +72,24 @@ export function CurrencyProvider({ children }) {
     setStageUp(null)
   }
 
+  const holdStageUp = () => setStageUpHoldCount((count) => count + 1)
+  const releaseStageUp = () => setStageUpHoldCount((count) => Math.max(0, count - 1))
+
   return (
-    <CurrencyContext.Provider value={{ leaves, addLeaves, growthPoints, addGrowthPoints, resetGrowthPoints, growthStage, stageUp, dismissStageUp }}>
+    <CurrencyContext.Provider
+      value={{
+        leaves,
+        addLeaves,
+        growthPoints,
+        addGrowthPoints,
+        resetGrowthPoints,
+        growthStage,
+        stageUp: stageUpHoldCount > 0 ? null : stageUp,
+        dismissStageUp,
+        holdStageUp,
+        releaseStageUp,
+      }}
+    >
       {children}
     </CurrencyContext.Provider>
   )

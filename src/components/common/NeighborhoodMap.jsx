@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import { getNearbyAllowedInsects } from '../../api/inaturalist.js'
 import { loadGoogleMaps } from '../../api/googleMaps.js'
 import { MAP_INSECT_COUNT } from '../../data/mapSpecies.js'
+import { NaturePanel } from './NatureUI.jsx'
+import { Leaf } from 'lucide-react'
 
 const DEFAULT_CENTER = { lat: 37.5665, lng: 126.978 }
 
@@ -84,6 +86,7 @@ export default function NeighborhoodMap() {
   const mapElement = useRef(null)
   const mapRef = useRef(null)
   const markersRef = useRef([])
+  const userMarkerRef = useRef(null)
   const [state, setState] = useState({ status: 'locating', message: '현재 위치를 확인하고 있어요.' })
 
   useEffect(() => {
@@ -96,6 +99,19 @@ export default function NeighborhoodMap() {
         const maps = await loadGoogleMaps()
         if (cancelled) return
         mapRef.current = new maps.Map(mapElement.current, { center, zoom: 14, mapTypeControl: false, streetViewControl: false, fullscreenControl: false })
+        if (position) {
+          userMarkerRef.current = new maps.Marker({
+            map: mapRef.current,
+            position: center,
+            title: '내 위치',
+            zIndex: 1000,
+            icon: {
+              url: '/ui/my-location-marker.png',
+              scaledSize: new maps.Size(52, 52),
+              anchor: new maps.Point(26, 48),
+            },
+          })
+        }
         const observations = await getNearbyAllowedInsects({
           latitude: center.lat,
           longitude: center.lng,
@@ -123,20 +139,33 @@ export default function NeighborhoodMap() {
 
     if (!navigator.geolocation) initialize(null)
     else navigator.geolocation.getCurrentPosition(initialize, () => initialize(null), { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 })
-    return () => { cancelled = true; controller.abort(); markersRef.current.forEach((marker) => marker.setMap(null)) }
+    return () => {
+      cancelled = true
+      controller.abort()
+      markersRef.current.forEach((marker) => marker.setMap(null))
+      userMarkerRef.current?.setMap(null)
+      userMarkerRef.current = null
+    }
   }, [])
 
   return (
-    <section className="rounded-xl border border-ivory-200 bg-white p-3 shadow-card" aria-label="동네 생태 지도">
-      <div className="mb-2 flex items-center justify-between gap-2">
+    <NaturePanel className="p-4 sm:p-5" aria-label="동네 생태 지도">
+      <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="font-semibold text-ink-900">동네 생태 지도</h2>
-          <p className="text-xs text-ink-700/70">최근 1년 · 검색 반경 3km · 핀 그룹 100m · 지정 곤충 {MAP_INSECT_COUNT}종</p>
+          <h2 className="text-xl font-black text-[var(--nature-ink)]">동네 생태 지도</h2>
+          <p className="mt-1 text-sm font-semibold text-[var(--nature-muted)]">최근 1년 · 검색 반경 3km · 핀 그룹 100m · 지정 곤충 {MAP_INSECT_COUNT}종</p>
         </div>
-        {state.status === 'ready' && <span className="text-xs text-leaf-700">핀 {state.markerCount}개 · 관찰 {state.count}개</span>}
+        {state.status === 'ready' && (
+          <span className="nature-title-aside">
+            <Leaf size={16} aria-hidden="true" />
+            핀 {state.markerCount}개 · 관찰 {state.count}개
+          </span>
+        )}
       </div>
-      <div ref={mapElement} className="h-[min(68vh,680px)] min-h-[420px] w-full overflow-hidden rounded-lg bg-ivory-100" />
+      <div className="nature-map-frame">
+        <div ref={mapElement} className="h-[min(62vh,680px)] min-h-[380px] w-full bg-ivory-100" />
+      </div>
       {state.status !== 'ready' && <p className="mt-2 text-xs text-ink-700/70">{state.message}</p>}
-    </section>
+    </NaturePanel>
   )
 }

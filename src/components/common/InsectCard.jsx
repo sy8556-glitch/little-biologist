@@ -1,11 +1,12 @@
 export default function InsectCard({ name, image, rank, registered, onClick, showRankDot = true, showTutorialPointer }) {
   const rankClass = showRankDot && registered && rank ? `insect-card--${rank}` : ''
+  const displayName = registered ? name : '미수집 곤충'
 
   return (
     <button
       type="button"
       onClick={onClick}
-      aria-label={registered ? name : `${name} 미수집`}
+      aria-label={registered ? name : '미수집 곤충'}
       className={`insect-card relative ${rankClass} flex w-full flex-col gap-2 rounded-xl bg-white p-2 text-left shadow-card transition ${
         registered ? 'hover:-translate-y-0.5 hover:shadow-soft' : 'opacity-85 hover:shadow-soft'
       }`}
@@ -19,29 +20,25 @@ export default function InsectCard({ name, image, rank, registered, onClick, sho
       <div
         className="relative aspect-[4/3] w-full overflow-hidden rounded-lg bg-ivory-50"
       >
-        {registered && image ? (
-          <img src={image} alt="" aria-hidden="true" className="h-full w-full object-contain p-2" />
-        ) : (
-          <div className="relative h-full w-full bg-ivory-100">
-            {image && (
-              <img
-                src={image}
-                alt=""
-                aria-hidden="true"
-                className="h-full w-full object-contain p-2 grayscale opacity-25 brightness-75"
-              />
-            )}
-            <div className="absolute inset-0 grid place-items-center">
-              <div className="grid h-10 w-10 place-items-center rounded-full bg-white/90 text-lg text-ink-700/40 shadow-sm">
-                🔒
-              </div>
-            </div>
+        {image && (
+          <img
+            src={image}
+            alt=""
+            aria-hidden="true"
+            className={`h-full w-full object-contain p-2 ${registered ? '' : 'grayscale opacity-30'}`}
+          />
+        )}
+        {!registered && (
+          <div className="absolute inset-0 grid place-items-center bg-ink-900/10">
+            <span className="grid h-10 w-10 place-items-center rounded-full bg-white/85 text-lg font-bold text-ink-700/55 shadow-card">
+              ?
+            </span>
           </div>
         )}
       </div>
       <div className="flex w-full items-center justify-between px-0.5">
-        <span className={`truncate text-sm font-medium ${registered ? 'text-ink-900' : 'text-ink-700/50'}`}>
-          {registered ? name : '미수집 곤충'}
+        <span className={`truncate text-sm font-medium ${registered ? 'text-ink-900' : 'text-ink-700/70'}`}>
+          {displayName}
         </span>
       </div>
     </button>
