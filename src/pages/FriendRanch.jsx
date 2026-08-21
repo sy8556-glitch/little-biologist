@@ -8,6 +8,7 @@ import { HABITATS } from '../data/insectSpecies'
 import { getRepresentativeCharacterImage, GROWTH_MAX } from '../data/representativeCharacter'
 import { useAuth } from '../router/AuthContext'
 import { reportMissionEvent } from '../utils/missionEvents'
+import { apiUrl } from '../api/apiBase'
 
 // friends.md: "목장 방문"은 평소 자기 목장 화면과 같은 구성(대객체·배치 그대로, 진행도는
 // 친구 것)으로 보여주되, 편집·미션·상점 등 내 것만 의미 있는 하단 UI 대신 뒤로가기/친구 도감
@@ -29,7 +30,7 @@ export default function FriendRanch() {
     let cancelled = false
     // eslint-disable-next-line react-hooks/set-state-in-effect -- 마운트/uid 변경 시 1회 서버에서 불러오는 표준 패턴
     setIsLoading(true)
-    fetch(`/api/ranch/${encodeURIComponent(uid)}`)
+    fetch(apiUrl(`/api/ranch/${encodeURIComponent(uid)}`))
       .then((response) => (response.ok ? response.json() : null))
       .then((data) => {
         if (!cancelled) setRanch(data)
@@ -50,7 +51,7 @@ export default function FriendRanch() {
     setIsGuestbookOpen(true)
     setIsGuestbookLoading(true)
     try {
-      const response = await fetch(`/api/guestbook/${encodeURIComponent(uid)}`)
+      const response = await fetch(apiUrl(`/api/guestbook/${encodeURIComponent(uid)}`))
       const { entries } = await response.json()
       setGuestbookEntries(entries || [])
     } catch {
@@ -63,7 +64,7 @@ export default function FriendRanch() {
   async function submitGuestbook() {
     if (!guestMessage.trim()) return
     try {
-      const response = await fetch(`/api/guestbook/${encodeURIComponent(uid)}`, {
+      const response = await fetch(apiUrl(`/api/guestbook/${encodeURIComponent(uid)}`), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ visitorUid: user?.uid, message: guestMessage.trim() }),
@@ -71,7 +72,7 @@ export default function FriendRanch() {
       if (response.ok) {
         reportMissionEvent({ type: 'guestbook' })
         setGuestMessage('')
-        const refreshed = await fetch(`/api/guestbook/${encodeURIComponent(uid)}`)
+        const refreshed = await fetch(apiUrl(`/api/guestbook/${encodeURIComponent(uid)}`))
         const { entries } = await refreshed.json()
         setGuestbookEntries(entries || [])
       }

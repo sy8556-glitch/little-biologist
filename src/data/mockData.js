@@ -17,13 +17,6 @@ export const mockUser = {
 
 // 서식지 목록은 src/data/insectSpecies.js의 HABITATS를 사용한다 (실제 목장 배경/오브젝트 자산 기반).
 
-// 금(사진) / 은(그림) / 동(목장 획득) — 회의 내용 기반, 최종 조건은 미확정 (D-003, unresolved-decisions.md #17)
-export const rankMeta = {
-  gold: { label: '금', color: 'rank-gold', desc: '사진으로 등록' },
-  silver: { label: '은', color: 'rank-silver', desc: '그림으로 등록' },
-  bronze: { label: '기본', color: 'rank-bronze', desc: '목장에서 획득' },
-}
-
 export const mockQuests = {
   daily: [
     { id: 'q1', title: '탐험을 떠나보자', desc: '오늘 탐험 지역을 1회 방문해요.', progress: 1, total: 1, rewardLeaf: 50, claimed: false, done: true },
@@ -43,11 +36,6 @@ export const mockFriends = [
   { id: 'f1', friendCode: 'GREEN-0142', nickname: '초록나무', level: 14, fieldGuideCount: 86, status: 'accepted' },
   { id: 'f2', friendCode: 'BUGDR-0091', nickname: '곤충박사', level: 13, fieldGuideCount: 72, status: 'accepted' },
   { id: 'f3', friendCode: 'FLWR-0207', nickname: '꽃잎소녀', level: 11, fieldGuideCount: 65, status: 'pending' },
-]
-
-export const mockGuestbook = [
-  { id: 'g1', author: '초록나무', message: '목장이 정말 예쁘게 꾸며져 있네요! 놀러 왔어요 :)', createdAt: '2시간 전' },
-  { id: 'g2', author: '곤충박사', message: '사슴벌레 등록 축하해요~', createdAt: '1일 전' },
 ]
 
 export const mockShopItems = {

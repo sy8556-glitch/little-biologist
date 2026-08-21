@@ -10,6 +10,7 @@ import fieldTreeImage from '../../IMAGE/field_tree.png'
 import ZoneBannerOverlay from '../components/features/ZoneBannerOverlay'
 import RanchCamera from '../components/common/RanchCamera'
 import { getHabitatById, getSpeciesByHabitat } from '../data/insectSpecies'
+import { apiUrl } from '../api/apiBase'
 
 const HABITAT_SCENES = {
   forest: {
@@ -179,7 +180,7 @@ export default function FriendRanchHabitat() {
     let cancelled = false
     // eslint-disable-next-line react-hooks/set-state-in-effect -- 마운트/uid 변경 시 1회 서버에서 불러오는 표준 패턴
     setIsLoading(true)
-    fetch(`/api/field-guide/${encodeURIComponent(uid)}`)
+    fetch(apiUrl(`/api/field-guide/${encodeURIComponent(uid)}`))
       .then((response) => (response.ok ? response.json() : null))
       .then((data) => {
         if (cancelled || !data) return

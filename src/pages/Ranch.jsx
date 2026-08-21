@@ -8,6 +8,7 @@ import RandomInsectEffect from '../components/common/RandomInsectEffect'
 import EggFirstRevealEffect from '../components/common/EggFirstRevealEffect'
 import AnnouncementBoard from '../components/common/AnnouncementBoard'
 import { fetchRanchWeather, WEATHER_REFRESH_MS } from '../api/weather'
+import { apiUrl } from '../api/apiBase'
 import { mockUser } from '../data/mockData'
 import { HABITATS, getHabitatStats, getInsectSpecies, DEMO_ACCOUNT_USERNAME } from '../data/insectSpecies'
 import { getRepresentativeCharacterImage, getOwnedRepresentativeCharacters, GROWTH_MAX } from '../data/representativeCharacter'
@@ -146,7 +147,7 @@ export default function Ranch() {
     if (!user?.uid) return
     setIsGuestbookLoading(true)
     try {
-      const response = await fetch(`/api/guestbook/${user.uid}`)
+      const response = await fetch(apiUrl(`/api/guestbook/${user.uid}`))
       const { entries } = await response.json()
       setGuestbookEntries(entries || [])
     } catch {
